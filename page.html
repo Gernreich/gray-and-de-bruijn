@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gray and de Bruijn</title>
+<meta name="description" content="Gray codes and de Bruijn sequences through three small alphabets: layer-memory stacks, Zellweger's Logic Alphabet and a grid script, with a laser-cut ruler, encoder discs and rings.">
+<!-- index.html is written by walks.py from page.html: edit page.html -->
+<style>
+:root {
+  --bg: #fcfcfb; --surface: #f3f2ee; --ink: #0b0b0b; --ink-2: #52514e; --rule: #dddcd6;
+  --accent: #2a78d6; --stock: #e9dcc4; --stock-edge: #8a7350; --mark: #2b2116;
+  --a: #d62828; --b: #1e963c; --c: #2850d6; --hi: #eda100;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a19; --surface: #252523; --ink: #f0efec; --ink-2: #c3c2b7; --rule: #3a3a37;
+    --accent: #3987e5;
+    --a: #f0504e; --b: #3cbf5e; --c: #5b7ff0; --hi: #f0b429;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a1a19; --surface: #252523; --ink: #f0efec; --ink-2: #c3c2b7; --rule: #3a3a37;
+  --accent: #3987e5;
+  --a: #f0504e; --b: #3cbf5e; --c: #5b7ff0; --hi: #f0b429;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 17px/1.6 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif; }
+main { max-width: 860px; overflow-wrap: break-word; margin: 0 auto; padding: 40px 16px 64px; }
+h1 { font-size: 2.1rem; line-height: 1.15; margin: 0 0 12px; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; margin: 48px 0 8px; padding-top: 16px; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.02rem; margin: 22px 0 6px; }
+.lede { font-size: 1.12rem; color: var(--ink-2); margin: 0 0 24px; }
+a { color: var(--accent); }
+code { font: 0.92em ui-monospace, SFMono-Regular, Menlo, monospace; }
+.credit { background: var(--surface); border-left: 3px solid var(--accent); padding: 12px 16px; border-radius: 4px; }
+.foot { margin-top: 2em; font-size: 0.85em; color: var(--ink-2); }
+.hint { font-size: 0.88rem; color: var(--ink-2); }
+
+/* laser-cut previews */
+.piece .stock { fill: var(--stock); stroke: var(--stock-edge); stroke-width: 0.3; }
+.piece .eng { fill: var(--mark); }
+.piece .sco { fill: none; stroke: var(--mark); stroke-width: 0.25; stroke-linecap: round; stroke-linejoin: round; }
+.piece .win { fill: none; stroke: var(--hi); stroke-width: 0.7; }
+.scroll { overflow-x: auto; background: var(--surface); border-radius: 6px; padding: 12px; }
+.scroll .piece { width: 1300px; max-width: none; height: auto; display: block; cursor: crosshair; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pair > figure { margin: 0; background: var(--surface); border-radius: 6px; padding: 12px; min-width: 0; }
+.pair .piece, .solo .piece { width: 100%; height: auto; display: block; }
+.solo { max-width: 460px; margin: 16px auto; background: var(--surface); border-radius: 6px; padding: 12px; }
+figcaption { font-size: 0.88rem; color: var(--ink-2); margin-top: 6px; }
+@media (max-width: 600px) { .pair { grid-template-columns: minmax(0, 1fr); } }
+
+/* decoders */
+.decoder { background: var(--surface); border-radius: 6px; padding: 12px 16px; margin: 12px 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.cells { display: flex; gap: 3px; }
+.cells button { width: 26px; height: 34px; border: 1px solid var(--stock-edge); border-radius: 3px;
+  background: var(--stock); cursor: pointer; padding: 0; }
+.cells button[aria-pressed="true"] { background: var(--mark); }
+.cells button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.out { font-size: 1.1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* stacks */
+.stacks { display: flex; flex-wrap: wrap; gap: 12px 8px; align-items: flex-end; }
+.stacks .stack { width: 26px; height: auto; }
+.stacks .col { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.72rem; }
+.stacks .col code { font-size: 0.72rem; color: var(--ink-2); }
+.stacks .mv { font-weight: 700; min-height: 1em; }
+.stack text { font: 600 6.5px ui-sans-serif, system-ui, sans-serif; fill: #fff; text-anchor: middle; dominant-baseline: middle; }
+.stack rect.hi { stroke: var(--hi); stroke-width: 2; }
+.row-stack { display: flex; flex-wrap: wrap; gap: 3px; margin: 12px 0; }
+.row-stack .L { width: 30px; height: 30px; border-radius: 4px; color: #fff; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; }
+.row-stack .L.wrap { background: transparent !important; color: var(--ink-2); border: 1px dashed var(--rule); }
+
+/* logic table */
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; font-size: 0.9rem; width: 100%; min-width: 560px; }
+th, td { text-align: left; padding: 4px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { color: var(--ink-2); font-weight: 600; }
+td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.sq { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 2px; width: 24px; aspect-ratio: 1; vertical-align: middle; }
+.sq i { border: 1px solid var(--ink-2); border-radius: 2px; }
+.sq i.on { background: var(--ink); border-color: var(--ink); }
+
+/* grid letters */
+.glets { display: flex; flex-wrap: wrap; gap: 8px; }
+.glet { display: flex; flex-direction: column; align-items: center; background: var(--surface);
+  border-radius: 6px; padding: 6px 8px; min-width: 56px; font-size: 0.85rem; }
+.glet span { color: var(--ink-2); font-size: 0.78rem; }
+.letter line { stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; }
+.letter line.turned { stroke: var(--hi); }
+.letter circle { fill: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+<p style="margin:0 0 12px;font-size:0.95rem"><strong><a href="https://gernreich.github.io/">← All projects</a></strong></p>
+<h1>Gray and de Bruijn</h1>
+<p class="lede">Two classic ways to walk through a small alphabet, tried on three alphabets from earlier projects: the A B C layers of <a href="https://gernreich.github.io/atomic-layer-memory/">atomic layer memory</a>, the sixteen truth tables of Zellweger's <a href="https://gernreich.github.io/Logic-Research/zellweger.html">Logic Alphabet</a>, and the 28 letters of the <a href="https://gernreich.github.io/gernreich-writing/">grid script</a>. Four of the walks are cut files for the laser.</p>
+
+<p class="credit"><strong>Whose ideas these are.</strong> The layer memory and the grid script are the author's. The Logic Alphabet is Shea Zellweger's. Gray codes are named after Frank Gray of Bell Labs (patented 1953), though Émile Baudot used one in the 1870s. De Bruijn sequences are named after Nicolaas de Bruijn (1946), who was preceded by Camille Flye Sainte-Marie (1894). Rulers and discs that read their own position this way are standard in absolute encoders. What is new here is putting the three alphabets through these walks. The counts and the two findings below, the rings that put each truth table across from its negation and the bound on the grid script, were worked out for this page, and <code>walks.py</code> checks them.</p>
+
+<h2 id="walks">Two ways to walk an alphabet</h2>
+<p><strong>A Gray code</strong> lists every symbol once, and each differs from the one before by a single change. Counting 0 to 15 in binary, 0111 to 1000 flips four bits at once. In Gray code no step flips more than one. If the list closes back on itself, it is a Gray <em>cycle</em>.</p>
+<p><strong>A de Bruijn sequence</strong> is a single cyclic string in which every word of <em>n</em> symbols occurs exactly once. Slide a window <em>n</em> wide along it and you never see the same thing twice, so what you see tells you where you are. For two symbols and <em>n</em> = 5 it is 32 long: <code>{{DISC}}</code>.</p>
+
+<h2 id="ruler">A ruler that knows where it is</h2>
+<p>The bottom edge of this 300&nbsp;mm ruler is a track of 1&nbsp;mm cells, engraved or bare, cut from the de Bruijn sequence for windows of nine. Any nine neighbouring cells occur at only one place on it. Lay the reader card on the track, read the nine cells through its window, and the pattern names the millimetre where the window starts: 301 positions, from 0 to 300. The ordinary scale on the top edge is there to check against.</p>
+<div class="scroll">{{RULER}}</div>
+<p class="hint">Click anywhere on the ruler to put the reader there, or set the nine cells by hand below.</p>
+<div class="decoder" id="rdec"><div class="cells" role="group" aria-label="nine cells of the ruler track, left to right"></div><span class="out" aria-live="polite"></span></div>
+<div class="pair">
+<figure>{{READER}}<figcaption>The reader card. The window is 9&nbsp;mm by 8&nbsp;mm, ticked at every cell edge; the line from its left edge points to the scale.</figcaption></figure>
+<figure><p style="margin:0">Reading the track by eye: neighbouring engraved cells run together into one bar, so count bar lengths in millimetres using the ticks. At 137&nbsp;mm, where this page opens the reader, the window shows 3&nbsp;mm bare, a 5&nbsp;mm bar and 1&nbsp;mm bare: <code>000111110</code>.</p></figure>
+</div>
+
+<h2 id="discs">Two discs, one question</h2>
+<p>Both discs give 32 angles, one per 11.25°. The <strong>Gray disc</strong> uses five rings, read along one radius from the hole outwards. Turning past any boundary changes only one ring, so a reader caught on a boundary is never off by more than one step (in plain binary, 15 to 16 would change all five rings). The <strong>de Bruijn disc</strong> uses one ring of 32 cells and reads five neighbouring cells clockwise. One ring and five readers do the job of five rings and one reader.</p>
+<div class="pair">
+<figure>{{GRAY_DISC}}<figcaption>Gray disc: five rings, innermost the highest bit. The long ticks mark the quarters.</figcaption></figure>
+<figure>{{DB_DISC}}<figcaption>De Bruijn disc: one ring, the sequence above running clockwise from the top.</figcaption></figure>
+</div>
+<div class="decoder" id="ddec"><div class="cells" role="group" aria-label="five cells of the de Bruijn disc, clockwise"></div><span class="out" aria-live="polite"></span></div>
+
+<h2 id="layers">Layer memory</h2>
+<p>In <a href="https://gernreich.github.io/atomic-layer-memory/">atomic layer memory</a> a bit is the site of a close-packed layer, 0 on A and 1 on C, with a spacer on B between every two bits. Writing the next number means moving the layers that changed. Counting from 0 to 15 in binary moves 26 layers. In Gray code it moves 15, exactly one per step. Moved layers are ringed in yellow:</p>
+{{COUNTING}}
+
+<h3>A stack with every window once</h3>
+<p>A close-packed layer can never sit on the same site as the layer below, so of the 27 words of three layers only 12 can exist (3 × 2 × 2). The stack below contains each of those 12 exactly once, read upwards in windows of three and wrapping round (the dashed cells repeat the start). The same holds for any window size <em>n</em>: such a stack is 3 × 2<sup><em>n</em>−1</sup> layers long, and <code>walks.py</code> builds and checks the ones for windows of 3, 4 and 5.</p>
+{{STACK_DB}}
+
+<h3>A second way to read a stack</h3>
+<p>Because neighbouring layers always differ, each layer is one of two things relative to the layer below it: a turn up (A→B, B→C, C→A) or a turn down. Writing up as 1 and down as 0, the stack above, once round, reads <code>{{STACK_DB_STEPS}}</code>. This is the Hägg notation crystallographers use for close-packed polytypes. It stores one bit in every layer, twice the density of the spacer code. The cost is that a bit depends on two layers, so misreading one layer corrupts the bits on both sides of it. The spacer code reads every bit off a single layer.</p>
+
+<h2 id="logic">The Logic Alphabet as a ring</h2>
+<p>A Logic Alphabet glyph stands on a square of four places, one per row of the truth table (TT TF FT FF, set out as in <a href="https://gernreich.github.io/Logic-Research/zellweger.html">Logic Research</a>), with a stem wherever the function is true. A Gray code through the sixteen glyphs therefore adds or removes one stem at a time. Closed into a ring, that is a Hamiltonian cycle on the four-dimensional cube, and there are 1344 of them. <strong>48 of them are antipodal</strong>: every glyph sits directly across the ring from its negation, the glyph with every stem switched. This ring is one of the 48:</p>
+<figure class="solo">{{LOGIC_RING}}<figcaption>Engraved squares are stems. The glyphs stand upright because turning one turns its logic; the chevron marks the top.</figcaption></figure>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>glyph</th><th>rows</th><th>means</th><th>next step</th><th>across the ring</th></tr></thead>
+<tbody>
+{{LOGIC_TABLE}}
+</tbody></table></div>
+
+<h2 id="grid">The grid script as a ring</h2>
+<p>A grid-script letter is two steps among the eight grid directions, traced either way round. The tightest Gray code would change one step by an eighth of a turn each time. That is impossible, and the reason is parity. Call the turn between a letter's two steps its bend. Turning one step by an eighth changes the bend by one, so such a move always goes between an even-bend letter and an odd-bend letter. There are 12 even-bend letters ({{EVEN}}) and 16 odd-bend ones ({{ODD}}). A cycle that alternates between the two kinds needs the same number of each, so no cycle uses eighth-turns alone.</p>
+<p>The ring therefore allows any change to one step and counts the turning. A cycle through all 28 can alternate kinds at most 24 times, and each of the 4 remaining moves stays within one kind and costs at least a quarter turn. That makes 24 + 4 × 2 = 32 eighths at the least, and the ring below reaches it. The stroke drawn in yellow is the one that turned on the way in from the letter before. The dot marks where the pen starts.</p>
+<div class="glets">{{GRID_LIST}}</div>
+<figure class="solo">{{GRID_RING}}<figcaption>The grid ring, starting from G at the top and running clockwise. Letters stand upright, because the script reads them by direction. Of its 28 changes, 24 are eighth-turns and 4 are quarter-turns.</figcaption></figure>
+
+<h2 id="cutting">Cutting</h2>
+<p>The six cut files are in <a href="https://github.com/Gernreich/gray-and-de-bruijn/tree/main/cut-files"><code>cut-files/</code></a>, each one fitting the 600 × 305&nbsp;mm bed of the xTool P2S. They use the staircase ruler's layer colours: green #008000 to engrave (filled), blue #0000ff to score, orange #ff8000 for inner cuts (cut first), black #000000 for outlines. Outlines sit half a kerf outside the finished edge, so the ruler's zero is the cut face. <code>python3 walks.py --kerf=0.18</code> rewrites the files for another kerf (the default is 0.13).</p>
+<ul>
+<li><code>window-ruler-300.svg</code>: 320 × 30&nbsp;mm, with a hanging hole in the tail</li>
+<li><code>window-reader.svg</code>: 36 × 30&nbsp;mm</li>
+<li><code>gray-disc.svg</code>, <code>de-bruijn-disc.svg</code>: 90&nbsp;mm across, 6&nbsp;mm centre hole</li>
+<li><code>logic-ring.svg</code>: 124&nbsp;mm across, an 80&nbsp;mm hole</li>
+<li><code>grid-ring.svg</code>: 136&nbsp;mm across, an 88&nbsp;mm hole</li>
+</ul>
+
+<p class="foot">Made by Michael Gernreich with <a href="https://www.anthropic.com/claude">Claude</a> (Anthropic), working in Claude Code, which co-wrote the code and the documentation. Commits Claude made carry a <code>Co-Authored-By: Claude</code> line. Source: <a href="https://github.com/Gernreich/gray-and-de-bruijn">github.com/Gernreich/gray-and-de-bruijn</a>.</p>
+</main>
+<script>
+const TRACK = "{{TRACK}}", DISC = "{{DISC}}";
+
+function decoder(id, seq, n, cyclic, say, onSet) {
+  const root = document.getElementById(id), cells = root.querySelector('.cells'), out = root.querySelector('.out');
+  const where = new Map(), m = cyclic ? seq.length : seq.length - n + 1, s = cyclic ? seq + seq.slice(0, n - 1) : seq;
+  for (let i = 0; i < m; i++) where.set(s.slice(i, i + n), i);
+  const btns = [];
+  for (let i = 0; i < n; i++) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', 'cell ' + (i + 1));
+    b.addEventListener('click', () => { b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); show(); });
+    cells.appendChild(b); btns.push(b);
+  }
+  function word() { return btns.map(b => b.getAttribute('aria-pressed') === 'true' ? '1' : '0').join(''); }
+  function show() {
+    const w = word(), p = where.get(w);
+    out.textContent = p === undefined ? w + ': not on it' : w + ': ' + say(p);
+    if (onSet && p !== undefined) onSet(p);
+  }
+  function set(p) { const w = s.slice(p, p + n); btns.forEach((b, i) => b.setAttribute('aria-pressed', w[i] === '1' ? 'true' : 'false')); show(); }
+  return set;
+}
+
+const ruler = document.querySelector('.scroll .piece');
+const NS = 'http://www.w3.org/2000/svg';
+const win = document.createElementNS(NS, 'rect');
+win.setAttribute('class', 'win'); win.setAttribute('y', '21.6'); win.setAttribute('width', '9'); win.setAttribute('height', '8.4');
+ruler.appendChild(win);
+const setRuler = decoder('rdec', TRACK, 9, false, p => 'the window starts at ' + p + ' mm',
+  p => win.setAttribute('x', p));
+ruler.addEventListener('click', e => {
+  const pt = ruler.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const x = pt.matrixTransform(ruler.getScreenCTM().inverse()).x;
+  setRuler(Math.max(0, Math.min(300, Math.floor(x))));
+});
+setRuler(137);
+const setDisc = decoder('ddec', DISC, 5, true, p => 'sector ' + p + ', ' + (p * 11.25) + '° clockwise from the top');
+setDisc(9);
+</script>
+</body>
+</html>
