@@ -43,7 +43,7 @@ Every count above is checked by `walks.py`.
 |---|---|
 | `walks.py` | the walks, the checks, the cut files and the page: `python3 walks.py` (`--kerf=MM`, default 0.13; `--check` writes nothing) |
 | `page.html` | the page template; `walks.py` writes `index.html` from it |
-| `index.html` | the page |
+| `index.html` | the page, with two 3D views (three.js): the window stack as close-packed atoms and the Logic ring on a turning 4-cube |
 | `cut-files/` | `window-ruler-300`, `window-reader`, `gray-disc`, `de-bruijn-disc`, `logic-ring`, `grid-ring`: SVG for the xTool P2S. Green engrave, blue score, orange inner cut, black outline |
 
 Gray codes are named for Frank Gray (patented 1953), though Émile Baudot used
@@ -55,4 +55,4 @@ Released under [CC0 1.0](LICENSE).
 
 ## Credits
 
-Made by Michael Gernreich with [Claude](https://www.anthropic.com/claude) (Anthropic), working in Claude Code, which co-wrote the code and the documentation. Commits Claude made carry a `Co-Authored-By: Claude` line.
+Made by Michael Gernreich with [Claude](https://www.anthropic.com/claude) (Anthropic), working in Claude Code. Claude proposed this exploration at Michael's request, worked out the results (the 48 antipodal Logic rings, the parity bound of 32 eighths on the grid script, the stack counts), designed the pieces, and wrote `walks.py`, the cut files, the 3D views and the documentation. Commits Claude made carry a `Co-Authored-By: Claude` line.
