@@ -22,7 +22,7 @@ Cut files (P2S layers as in the staircase ruler):
     orange #ff8000  cut, inner (first)
     black  #000000  cut, outline
 """
-import math, os, sys
+import json, math, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GREEN, BLUE, ORANGE, BLACK = '#008000', '#0000ff', '#ff8000', '#000000'
@@ -694,6 +694,9 @@ def page(kerf):
         '{{LOGIC_TABLE}}': logic_table(),
         '{{GRID_LIST}}': grid_list(),
         '{{EVEN}}': ' '.join(even), '{{ODD}}': ' '.join(odd),
+        '{{LOGIC_JSON}}': json.dumps(logic_ring()),
+        '{{STACK_JSON}}': json.dumps(s3),
+        '{{MEANING_JSON}}': json.dumps(MEANING),
     }
     html = open(os.path.join(HERE, 'page.html')).read()
     for a, b in sub.items():

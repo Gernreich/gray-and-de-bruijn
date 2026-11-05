@@ -93,6 +93,17 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 .letter line { stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; }
 .letter line.turned { stroke: var(--hi); }
 .letter circle { fill: var(--ink); }
+
+/* 3D views */
+.view3d { background: var(--surface); border-radius: 6px; padding: 12px; margin: 16px 0; }
+.view3d canvas { display: block; width: 100%; height: 440px; touch-action: none; cursor: grab; border-radius: 4px; }
+.view3d canvas:active { cursor: grabbing; }
+.view3d .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 8px; font-size: 0.9rem; }
+.view3d button { font: inherit; font-size: 0.85rem; color: var(--ink); background: transparent;
+  border: 1px solid var(--rule); border-radius: 4px; padding: 3px 12px; cursor: pointer; }
+.view3d button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.view3d .read { font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { .view3d canvas { height: 340px; } }
 </style>
 </head>
 <body>
@@ -133,6 +144,11 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 <h3>A stack with every window once</h3>
 <p>A close-packed layer can never sit on the same site as the layer below, so of the 27 words of three layers only 12 can exist (3 × 2 × 2). The stack below contains each of those 12 exactly once, read upwards in windows of three and wrapping round (the dashed cells repeat the start). The same holds for any window size <em>n</em>: such a stack is 3 × 2<sup><em>n</em>−1</sup> layers long, and <code>walks.py</code> builds and checks the ones for windows of 3, 4 and 5.</p>
 <div class="row-stack" aria-label="a cyclic stack of 12 layers"><span class="L" style="background:var(--a)">A</span><span class="L" style="background:var(--b)">B</span><span class="L" style="background:var(--c)">C</span><span class="L" style="background:var(--a)">A</span><span class="L" style="background:var(--c)">C</span><span class="L" style="background:var(--b)">B</span><span class="L" style="background:var(--c)">C</span><span class="L" style="background:var(--b)">B</span><span class="L" style="background:var(--a)">A</span><span class="L" style="background:var(--c)">C</span><span class="L" style="background:var(--a)">A</span><span class="L" style="background:var(--b)">B</span><span class="L wrap">A</span><span class="L wrap">B</span></div>
+<div class="view3d">
+<canvas id="stack3d" aria-label="the 12-layer stack as close-packed atoms, A red, B green, C blue"></canvas>
+<div class="bar"><button type="button" id="stackStep">Next window</button><button type="button" id="stackSpin">Pause</button><span class="read" id="stackRead" aria-live="polite"></span></div>
+<p class="hint" style="margin:4px 0 0">The same twelve layers as close-packed atoms, the bottom layer at the bottom. The three bright layers are the current window; the others are dimmed. Each atom nests in a hollow of the layer below, so no layer repeats the site under it. Drag to turn it, scroll to zoom.</p>
+</div>
 
 <h3>A second way to read a stack</h3>
 <p>Because neighbouring layers always differ, each layer is one of two things relative to the layer below it: a turn up (A→B, B→C, C→A) or a turn down. Writing up as 1 and down as 0, the stack above, once round, reads <code>111001000110</code>. This is the Hägg notation crystallographers use for close-packed polytypes. It stores one bit in every layer, twice the density of the spacer code. The cost is that a bit depends on two layers, so misreading one layer corrupts the bits on both sides of it. The spacer code reads every bit off a single layer.</p>
@@ -140,6 +156,13 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 <h2 id="logic">The Logic Alphabet as a ring</h2>
 <p>A Logic Alphabet glyph stands on a square of four places, one per row of the truth table (TT TF FT FF, set out as in <a href="https://gernreich.github.io/Logic-Research/zellweger.html">Logic Research</a>), with a stem wherever the function is true. A Gray code through the sixteen glyphs therefore adds or removes one stem at a time. Closed into a ring, that is a Hamiltonian cycle on the four-dimensional cube, and there are 1344 of them. <strong>48 of them are antipodal</strong>: every glyph sits directly across the ring from its negation, the glyph with every stem switched. This ring is one of the 48:</p>
 <figure class="solo"><svg class="piece" viewBox="-63.065 -63.065 126.13 126.13" role="img" aria-label="the Logic Alphabet ring"><path class="stock" fill-rule="evenodd" d="M-62.065,0 A62.065,62.065 0 1 0 62.065,0 A62.065,62.065 0 1 0 -62.065,0 Z M-39.935,0 A39.935,39.935 0 1 0 39.935,0 A39.935,39.935 0 1 0 -39.935,0 Z"/><path class="eng" d="M-5.1,-56.1 H-0.9 V-51.9 H-5.1 Z"/><path class="eng" d="M0.9,-56.1 H5.1 V-51.9 H0.9 Z"/><path class="eng" d="M-5.1,-50.1 H-0.9 V-45.9 H-5.1 Z"/><path class="eng" d="M0.9,-50.1 H5.1 V-45.9 H0.9 Z"/><path class="eng" d="M14.417,-52.218 H18.617 V-48.018 H14.417 Z"/><path class="eng" d="M20.417,-52.218 H24.617 V-48.018 H20.417 Z"/><path class="eng" d="M14.417,-46.218 H18.617 V-42.018 H14.417 Z"/><path class="eng" d="M30.962,-41.162 H35.162 V-36.962 H30.962 Z"/><path class="eng" d="M36.962,-41.162 H41.162 V-36.962 H36.962 Z"/><path class="eng" d="M42.018,-24.617 H46.218 V-20.417 H42.018 Z"/><path class="eng" d="M48.018,-24.617 H52.218 V-20.417 H48.018 Z"/><path class="eng" d="M48.018,-18.617 H52.218 V-14.417 H48.018 Z"/><path class="eng" d="M45.9,-5.1 H50.1 V-0.9 H45.9 Z"/><path class="eng" d="M51.9,0.9 H56.1 V5.1 H51.9 Z"/><path class="eng" d="M42.018,14.417 H46.218 V18.617 H42.018 Z"/><path class="eng" d="M42.018,20.417 H46.218 V24.617 H42.018 Z"/><path class="eng" d="M48.018,20.417 H52.218 V24.617 H48.018 Z"/><path class="eng" d="M30.962,30.962 H35.162 V35.162 H30.962 Z"/><path class="eng" d="M30.962,36.962 H35.162 V41.162 H30.962 Z"/><path class="eng" d="M14.417,42.018 H18.617 V46.218 H14.417 Z"/><path class="eng" d="M-18.617,48.018 H-14.417 V52.218 H-18.617 Z"/><path class="eng" d="M-41.162,36.962 H-36.962 V41.162 H-41.162 Z"/><path class="eng" d="M-35.162,36.962 H-30.962 V41.162 H-35.162 Z"/><path class="eng" d="M-52.218,20.417 H-48.018 V24.617 H-52.218 Z"/><path class="eng" d="M-50.1,-5.1 H-45.9 V-0.9 H-50.1 Z"/><path class="eng" d="M-56.1,0.9 H-51.9 V5.1 H-56.1 Z"/><path class="eng" d="M-46.218,-24.617 H-42.018 V-20.417 H-46.218 Z"/><path class="eng" d="M-35.162,-41.162 H-30.962 V-36.962 H-35.162 Z"/><path class="eng" d="M-35.162,-35.162 H-30.962 V-30.962 H-35.162 Z"/><path class="eng" d="M-18.617,-52.218 H-14.417 V-48.018 H-18.617 Z"/><path class="eng" d="M-24.617,-46.218 H-20.417 V-42.018 H-24.617 Z"/><path class="eng" d="M-18.617,-46.218 H-14.417 V-42.018 H-18.617 Z"/><path class="sco" d="M-5.5,-56.5 H-0.5 V-51.5 H-5.5 Z M0.5,-56.5 H5.5 V-51.5 H0.5 Z M-5.5,-50.5 H-0.5 V-45.5 H-5.5 Z M0.5,-50.5 H5.5 V-45.5 H0.5 Z M14.017,-52.618 H19.017 V-47.618 H14.017 Z M20.017,-52.618 H25.017 V-47.618 H20.017 Z M14.017,-46.618 H19.017 V-41.618 H14.017 Z M20.017,-46.618 H25.017 V-41.618 H20.017 Z M30.562,-41.562 H35.562 V-36.562 H30.562 Z M36.562,-41.562 H41.562 V-36.562 H36.562 Z M30.562,-35.562 H35.562 V-30.562 H30.562 Z M36.562,-35.562 H41.562 V-30.562 H36.562 Z M41.618,-25.017 H46.618 V-20.017 H41.618 Z M47.618,-25.017 H52.618 V-20.017 H47.618 Z M41.618,-19.017 H46.618 V-14.017 H41.618 Z M47.618,-19.017 H52.618 V-14.017 H47.618 Z M45.5,-5.5 H50.5 V-0.5 H45.5 Z M51.5,-5.5 H56.5 V-0.5 H51.5 Z M45.5,0.5 H50.5 V5.5 H45.5 Z M51.5,0.5 H56.5 V5.5 H51.5 Z M41.618,14.017 H46.618 V19.017 H41.618 Z M47.618,14.017 H52.618 V19.017 H47.618 Z M41.618,20.017 H46.618 V25.017 H41.618 Z M47.618,20.017 H52.618 V25.017 H47.618 Z M30.562,30.562 H35.562 V35.562 H30.562 Z M36.562,30.562 H41.562 V35.562 H36.562 Z M30.562,36.562 H35.562 V41.562 H30.562 Z M36.562,36.562 H41.562 V41.562 H36.562 Z M14.017,41.618 H19.017 V46.618 H14.017 Z M20.017,41.618 H25.017 V46.618 H20.017 Z M14.017,47.618 H19.017 V52.618 H14.017 Z M20.017,47.618 H25.017 V52.618 H20.017 Z M-5.5,45.5 H-0.5 V50.5 H-5.5 Z M0.5,45.5 H5.5 V50.5 H0.5 Z M-5.5,51.5 H-0.5 V56.5 H-5.5 Z M0.5,51.5 H5.5 V56.5 H0.5 Z M-25.017,41.618 H-20.017 V46.618 H-25.017 Z M-19.017,41.618 H-14.017 V46.618 H-19.017 Z M-25.017,47.618 H-20.017 V52.618 H-25.017 Z M-19.017,47.618 H-14.017 V52.618 H-19.017 Z M-41.562,30.562 H-36.562 V35.562 H-41.562 Z M-35.562,30.562 H-30.562 V35.562 H-35.562 Z M-41.562,36.562 H-36.562 V41.562 H-41.562 Z M-35.562,36.562 H-30.562 V41.562 H-35.562 Z M-52.618,14.017 H-47.618 V19.017 H-52.618 Z M-46.618,14.017 H-41.618 V19.017 H-46.618 Z M-52.618,20.017 H-47.618 V25.017 H-52.618 Z M-46.618,20.017 H-41.618 V25.017 H-46.618 Z M-56.5,-5.5 H-51.5 V-0.5 H-56.5 Z M-50.5,-5.5 H-45.5 V-0.5 H-50.5 Z M-56.5,0.5 H-51.5 V5.5 H-56.5 Z M-50.5,0.5 H-45.5 V5.5 H-50.5 Z M-52.618,-25.017 H-47.618 V-20.017 H-52.618 Z M-46.618,-25.017 H-41.618 V-20.017 H-46.618 Z M-52.618,-19.017 H-47.618 V-14.017 H-52.618 Z M-46.618,-19.017 H-41.618 V-14.017 H-46.618 Z M-41.562,-41.562 H-36.562 V-36.562 H-41.562 Z M-35.562,-41.562 H-30.562 V-36.562 H-35.562 Z M-41.562,-35.562 H-36.562 V-30.562 H-41.562 Z M-35.562,-35.562 H-30.562 V-30.562 H-35.562 Z M-25.017,-52.618 H-20.017 V-47.618 H-25.017 Z M-19.017,-52.618 H-14.017 V-47.618 H-19.017 Z M-25.017,-46.618 H-20.017 V-41.618 H-25.017 Z M-19.017,-46.618 H-14.017 V-41.618 H-19.017 Z M-2,-43.5 L0,-46 L2,-43.5"/></svg><figcaption>Engraved squares are stems. The glyphs stand upright because turning one turns its logic; the chevron marks the top.</figcaption></figure>
+<h3>The same ring on the four-dimensional cube</h3>
+<p>Give each row of the truth table its own axis, TT, TF, FT and FF. The sixteen glyphs are then the corners of a four-dimensional cube, and each step of the ring runs along one edge. Below, the cube is turned in four dimensions and drawn in perspective, the way a cube's shadow is drawn on paper. Grey lines are the cube's 32 edges, and the 16 yellow ones are the ring. The two markers travel the ring half a turn apart. The line between them always passes through the centre, because each glyph lies opposite its negation.</p>
+<div class="view3d">
+<canvas id="cube4" aria-label="the Logic Alphabet ring drawn on a turning four-dimensional cube"></canvas>
+<div class="bar"><button type="button" id="cubeSpin">Pause</button><span class="read" id="cubeRead" aria-live="polite"></span></div>
+<p class="hint" style="margin:4px 0 0">Drag to turn it in three dimensions, scroll to zoom. On its own it keeps turning in the fourth dimension too.</p>
+</div>
 <div class="table-wrap"><table>
 <thead><tr><th>#</th><th>glyph</th><th>rows</th><th>means</th><th>next step</th><th>across the ring</th></tr></thead>
 <tbody>
@@ -179,6 +202,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 
 <p class="foot">Made by Michael Gernreich with <a href="https://www.anthropic.com/claude">Claude</a> (Anthropic), working in Claude Code, which co-wrote the code and the documentation. Commits Claude made carry a <code>Co-Authored-By: Claude</code> line. Source: <a href="https://github.com/Gernreich/gray-and-de-bruijn">github.com/Gernreich/gray-and-de-bruijn</a>.</p>
 </main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const TRACK = "000000000100000001100000010100000011100000100100000101100000110100000111100001000100001001100001010100001011100001100100001101100001110100001111100010001100010010100010011100010100100010101100010110100010111100011001100011010100011011100011100100011101100011110100011111100100100101100100110100100111100101001", DISC = "00000100011001010011101011011111";
 
@@ -218,6 +242,164 @@ ruler.addEventListener('click', e => {
 setRuler(137);
 const setDisc = decoder('ddec', DISC, 5, true, p => 'sector ' + p + ', ' + (p * 11.25) + '° clockwise from the top');
 setDisc(9);
+
+const LOGIC = ["1111", "1110", "1100", "1101", "1001", "1011", "1010", "1000", "0000", "0001", "0011", "0010", "0110", "0100", "0101", "0111"], STACK = ["A", "B", "C", "A", "C", "B", "C", "B", "A", "C", "A", "B"], LOGIC_MEANING = {"1111": "always true", "0000": "never true", "1000": "A and B", "0111": "not both A and B", "1110": "A or B", "0001": "neither A nor B", "1011": "A implies B", "0100": "A and not B", "1101": "B implies A", "0010": "B and not A", "1100": "A", "0011": "not A", "1010": "B", "0101": "not B", "1001": "A if and only if B", "0110": "A or B but not both"};
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// a canvas with a scene, a group turned by dragging, and zoom on the wheel
+function stage(canvas, camZ) {
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(35, 1, 0.1, 200), group = new THREE.Group();
+  scene.add(group); cam.position.set(0, 0, camZ);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(3, 5, 8); scene.add(sun);
+  const st = { renderer, scene, cam, group, yaw: 0.5, pitch: 0.35, zoom: 1, held: false, spin: !reduced };
+  function size() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+    scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#f3f2ee');
+  }
+  size(); addEventListener('resize', size);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', size);
+  let px = 0, py = 0;
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); st.held = true; px = e.clientX; py = e.clientY; });
+  canvas.addEventListener('pointermove', e => {
+    if (!st.held) return;
+    st.yaw += (e.clientX - px) * 0.01; st.pitch += (e.clientY - py) * 0.01;
+    st.pitch = Math.max(-1.5, Math.min(1.5, st.pitch)); px = e.clientX; py = e.clientY;
+  });
+  const lift = () => { st.held = false; };
+  canvas.addEventListener('pointerup', lift); canvas.addEventListener('pointercancel', lift);
+  canvas.addEventListener('wheel', e => { e.preventDefault(); st.zoom = Math.max(0.4, Math.min(3, st.zoom * Math.exp(e.deltaY * 0.001))); }, { passive: false });
+  st.draw = () => {
+    group.rotation.set(st.pitch, st.yaw, 0);
+    cam.position.z = camZ * st.zoom;
+    renderer.render(scene, cam);
+  };
+  return st;
+}
+function pauseButton(btn, st) {
+  const label = () => { btn.textContent = st.spin ? 'Pause' : 'Play'; };
+  btn.addEventListener('click', () => { st.spin = !st.spin; label(); });
+  label();
+}
+
+// the 12-layer stack ------------------------------------------------------
+(function () {
+  const st = stage(document.getElementById('stack3d'), 19.5);
+  const SITE = { A: [0, 0], B: [0.5, Math.sqrt(3) / 6], C: [1, Math.sqrt(3) / 3] };
+  const COLOR = { A: 0xd62828, B: 0x1e963c, C: 0x2850d6 };
+  const H = Math.sqrt(2 / 3), R = 2.3, n = STACK.length;
+  const ball = new THREE.SphereGeometry(0.5, 20, 14), layers = [];
+  STACK.forEach((site, k) => {
+    const pts = [];
+    for (let i = -5; i <= 5; i++) for (let j = -5; j <= 5; j++) {
+      const x = i + j / 2 + SITE[site][0], y = j * Math.sqrt(3) / 2 + SITE[site][1];
+      if (Math.hypot(x - 0.5, y - 0.29) < R) pts.push([x - 0.5, y - 0.29]);
+    }
+    const mat = new THREE.MeshLambertMaterial({ color: COLOR[site], transparent: true });
+    const mesh = new THREE.InstancedMesh(ball, mat, pts.length), m = new THREE.Matrix4();
+    // layers stack up the screen: the stacking axis is y
+    pts.forEach((p, i) => { m.makeTranslation(p[0], (k - (n - 1) / 2) * H, p[1]); mesh.setMatrixAt(i, m); });
+    st.group.add(mesh); layers.push(mat);
+  });
+  let w = 0;
+  const read = document.getElementById('stackRead');
+  function show() {
+    const idx = [w, (w + 1) % n, (w + 2) % n];
+    layers.forEach((mat, k) => { mat.opacity = idx.includes(k) ? 1 : 0.13; mat.depthWrite = idx.includes(k); });
+    read.textContent = 'Window ' + (w + 1) + ' of ' + n + ': layers ' + idx.map(i => i + 1).join(', ') + ' read ' + idx.map(i => STACK[i]).join(' ');
+  }
+  document.getElementById('stackStep').addEventListener('click', () => { w = (w + 1) % n; show(); });
+  pauseButton(document.getElementById('stackSpin'), st);
+  show();
+  let last = performance.now(), acc = 0;
+  (function frame(t) {
+    const dt = Math.max(0, (t - last) / 1000); last = t;
+    if (st.spin && !st.held) { st.yaw += dt * 0.35; acc += dt; if (acc > 2.2) { acc = 0; w = (w + 1) % n; show(); } }
+    st.draw(); requestAnimationFrame(frame);
+  })(last);
+})();
+
+// the Logic ring on the 4-cube ----------------------------------------------
+(function () {
+  const st = stage(document.getElementById('cube4'), 16.5);
+  st.pitch = 0.25;
+  const verts = [...Array(16).keys()].map(v => [3, 2, 1, 0].map(b => (v >> b & 1) ? 1 : -1)); // TT TF FT FF
+  const ringIdx = LOGIC.map(t => parseInt(t, 2));
+  const Y = new THREE.Vector3(0, 1, 0);
+  function rod(r, color, opacity) {
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 10),
+      new THREE.MeshLambertMaterial({ color, transparent: opacity < 1, opacity }));
+    st.group.add(mesh); return mesh;
+  }
+  function place(mesh, a, b) {
+    const d = new THREE.Vector3().subVectors(b, a), len = d.length();
+    mesh.position.copy(a).addScaledVector(d, 0.5);
+    mesh.quaternion.setFromUnitVectors(Y, d.normalize()); mesh.scale.set(1, len, 1);
+  }
+  const edges = [];
+  for (let v = 0; v < 16; v++) for (let b = 0; b < 4; b++) {
+    const u = v ^ (1 << b);
+    if (u > v) {
+      const onRing = ringIdx.some((x, i) => (x === v && ringIdx[(i + 1) % 16] === u) || (x === u && ringIdx[(i + 1) % 16] === v));
+      edges.push([v, u, onRing ? rod(0.055, 0xeda100, 1) : rod(0.018, 0x8a8a84, 0.55)]);
+    }
+  }
+  // each corner wears its glyph: a 2 x 2 square, stems filled
+  function glyph(bits) {
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const g = c.getContext('2d');
+    g.fillStyle = '#fffdf7'; g.fillRect(0, 0, 64, 64); g.strokeStyle = '#2b2116'; g.lineWidth = 3;
+    [...bits].forEach((b, i) => {
+      const x = 6 + (i % 2) * 28, y = 6 + Math.floor(i / 2) * 28;
+      if (b === '1') { g.fillStyle = '#2b2116'; g.fillRect(x, y, 24, 24); } else g.strokeRect(x + 1.5, y + 1.5, 21, 21);
+    });
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c) }));
+    sp.scale.set(0.62, 0.62, 1); st.group.add(sp); return sp;
+  }
+  const sprites = verts.map((_, v) => glyph(v.toString(2).padStart(4, '0')));
+  const markA = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 14), new THREE.MeshLambertMaterial({ color: 0xe34948 }));
+  const markB = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 14), new THREE.MeshLambertMaterial({ color: 0x2a78d6 }));
+  st.group.add(markA, markB);
+  const chord = rod(0.025, 0x52514e, 0.9);
+  const read = document.getElementById('cubeRead');
+  pauseButton(document.getElementById('cubeSpin'), st);
+
+  let a4 = 0.6, t = 0, shown = -1;
+  const P = verts.map(() => new THREE.Vector3());
+  function project() {
+    const ca = Math.cos(a4), sa = Math.sin(a4), cb = Math.cos(a4 * 0.62), sb = Math.sin(a4 * 0.62);
+    verts.forEach((v, i) => {
+      let [x, y, z, w] = v;
+      [x, w] = [x * ca - w * sa, x * sa + w * ca];       // turn in the x-w plane
+      [z, w] = [z * cb - w * sb, z * sb + w * cb];       // and in the z-w plane
+      const k = 3.2 / (3.2 - w);
+      P[i].set(x * k * 1.6, y * k * 1.6, z * k * 1.6);
+    });
+  }
+  function along(s) {
+    const i = ((Math.floor(s) % 16) + 16) % 16, f = s - Math.floor(s);
+    return new THREE.Vector3().lerpVectors(P[ringIdx[i]], P[ringIdx[(i + 1) % 16]], f);
+  }
+  let last = performance.now();
+  (function frame(now) {
+    const dt = Math.max(0, (now - last) / 1000); last = now;
+    if (st.spin && !st.held) { a4 += dt * 0.25; t = (t + dt * 0.45) % 16; }
+    project();
+    edges.forEach(([v, u, m]) => place(m, P[v], P[u]));
+    sprites.forEach((sp, i) => sp.position.copy(P[i]));
+    const a = along(t), b = along(t + 8);
+    markA.position.copy(a); markB.position.copy(b); place(chord, a, b);
+    const i = Math.round(t) % 16;
+    if (i !== shown) {
+      shown = i;
+      read.textContent = LOGIC_MEANING[LOGIC[i]] + '  ↔  ' + LOGIC_MEANING[LOGIC[(i + 8) % 16]];
+    }
+    st.draw(); requestAnimationFrame(frame);
+  })(last);
+})();
 </script>
 </body>
 </html>
