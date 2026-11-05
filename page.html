@@ -43,8 +43,10 @@ code { font: 0.92em ui-monospace, SFMono-Regular, Menlo, monospace; }
 .piece .eng { fill: var(--mark); }
 .piece .sco { fill: none; stroke: var(--mark); stroke-width: 0.25; stroke-linecap: round; stroke-linejoin: round; }
 .piece .win { fill: none; stroke: var(--hi); stroke-width: 0.7; }
-.scroll { overflow-x: auto; background: var(--surface); border-radius: 6px; padding: 12px; }
-.scroll .piece { width: 1300px; max-width: none; height: auto; display: block; cursor: crosshair; }
+.rulerbox { background: var(--surface); border-radius: 6px; padding: 12px; }
+.rulerbox .piece { width: 100%; height: auto; display: block; cursor: crosshair; }
+.rulerbox .zoom { margin-top: 10px; border-radius: 4px; }
+.rulerbox .zoom .win { stroke-width: 0.35; }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .pair > figure { margin: 0; background: var(--surface); border-radius: 6px; padding: 12px; min-width: 0; }
 .pair .piece, .solo .piece { width: 100%; height: auto; display: block; }
@@ -120,8 +122,8 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 
 <h2 id="ruler">A ruler that knows where it is</h2>
 <p>The bottom edge of this 300&nbsp;mm ruler is a track of 1&nbsp;mm cells, engraved or bare, cut from the de Bruijn sequence for windows of nine. Any nine neighbouring cells occur at only one place on it. Lay the reader card on the track, read the nine cells through its window, and the pattern names the millimetre where the window starts: 301 positions, from 0 to 300. The ordinary scale on the top edge is there to check against.</p>
-<div class="scroll">{{RULER}}</div>
-<p class="hint">Click anywhere on the ruler to put the reader there, or set the nine cells by hand below.</p>
+<div class="rulerbox">{{RULER}}</div>
+<p class="hint">The whole ruler is above and a close-up of the reader below it, and the close-up follows the reader wherever it goes. Click either one to move the reader, or set the nine cells by hand below.</p>
 <div class="decoder" id="rdec"><div class="cells" role="group" aria-label="nine cells of the ruler track, left to right"></div><span class="out" aria-live="polite"></span></div>
 <div class="pair">
 <figure>{{READER}}<figcaption>The reader card. The window is 9&nbsp;mm by 8&nbsp;mm, ticked at every cell edge; the line from its left edge points to the scale.</figcaption></figure>
@@ -211,18 +213,27 @@ function decoder(id, seq, n, cyclic, say, onSet) {
   return set;
 }
 
-const ruler = document.querySelector('.scroll .piece');
+const ruler = document.querySelector('.rulerbox .piece');
 const NS = 'http://www.w3.org/2000/svg';
 const win = document.createElementNS(NS, 'rect');
 win.setAttribute('class', 'win'); win.setAttribute('y', '21.6'); win.setAttribute('width', '9'); win.setAttribute('height', '8.4');
 ruler.appendChild(win);
-const setRuler = decoder('rdec', TRACK, 9, false, p => 'the window starts at ' + p + ' mm',
-  p => win.setAttribute('x', p));
-ruler.addEventListener('click', e => {
-  const pt = ruler.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-  const x = pt.matrixTransform(ruler.getScreenCTM().inverse()).x;
-  setRuler(Math.max(0, Math.min(300, Math.floor(x))));
+// the close-up: the same drawing, its view 64 mm wide and centred on the reader
+const zoom = ruler.cloneNode(true);
+zoom.classList.add('zoom'); zoom.setAttribute('aria-label', 'close-up of the ruler around the reader');
+ruler.after(zoom);
+const zwin = zoom.querySelector('.win');
+const ZW = 64;
+const setRuler = decoder('rdec', TRACK, 9, false, p => 'the window starts at ' + p + ' mm', p => {
+  win.setAttribute('x', p); zwin.setAttribute('x', p);
+  const x0 = Math.max(-1, Math.min(321 - ZW, p + 4.5 - ZW / 2));
+  zoom.setAttribute('viewBox', x0 + ' 8 ' + ZW + ' 23');
 });
+[ruler, zoom].forEach(svg => svg.addEventListener('click', e => {
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const x = pt.matrixTransform(svg.getScreenCTM().inverse()).x;
+  setRuler(Math.max(0, Math.min(300, svg === zoom ? Math.round(x - 4.5) : Math.floor(x))));
+}));
 setRuler(137);
 const setDisc = decoder('ddec', DISC, 5, true, p => 'sector ' + p + ', ' + (p * 11.25) + '° clockwise from the top');
 setDisc(9);
