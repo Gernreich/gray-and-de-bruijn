@@ -699,6 +699,110 @@ def stack_db_html(n=3):
             + '</div>'), s, bits
 
 
+# ------------------------------------------------- the Venn ladder
+
+VR, VD = 30, 15                 # circle radius and centre offset of the two-set Venn
+VH = math.sqrt(VR * VR - VD * VD)
+VBOX = (-52, -40, 104, 80)      # the universe rectangle
+
+
+def venn_regions():
+    """The four regions of a two-set Venn diagram as SVG paths, in truth-
+    table order: TT (A and B), TF (A only), FT (B only), FF (outside)."""
+    t, b, R = f'0,{f(-VH)}', f'0,{f(VH)}', f(VR)
+    lens = f'M{t} A{R},{R} 0 0 1 {b} A{R},{R} 0 0 1 {t} Z'
+    a_only = f'M{t} A{R},{R} 0 1 0 {b} A{R},{R} 0 0 1 {t} Z'
+    b_only = f'M{t} A{R},{R} 0 1 1 {b} A{R},{R} 0 0 0 {t} Z'
+    x, y, w, h = VBOX
+    outside = (f'M{x},{y} H{x + w} V{y + h} H{x} Z '
+               f'M{t} A{R},{R} 0 1 0 {b} A{R},{R} 0 1 0 {t} Z')
+    return [lens, a_only, b_only, outside]
+
+
+def venn_svg(bits=None, colours=None, labels=False, cls='venn'):
+    """A Venn diagram; each region shaded where bits has a 1, or filled with
+    its own colour from colours."""
+    x, y, w, h = VBOX
+    out = [f'<svg class="{cls}" viewBox="{x - 2} {y - 2} {w + 4} {h + 4}" aria-hidden="true">']
+    for i, d in enumerate(venn_regions()):
+        if colours:
+            fill = colours[i]
+        else:
+            fill = 'var(--von)' if bits[i] == '1' else 'var(--voff)'
+        out.append(f'<path d="{d}" fill="{fill}" fill-rule="evenodd"/>')
+    out.append(f'<rect class="vline" x="{x}" y="{y}" width="{w}" height="{h}"/>'
+               f'<circle class="vline" cx="{-VD}" cy="0" r="{VR}"/><circle class="vline" cx="{VD}" cy="0" r="{VR}"/>')
+    if labels:
+        out.append('<text x="-36" y="-26">A</text><text x="36" y="-26">B</text>')
+        if labels == 'rows':
+            for name, (lx, ly) in zip(ROWS, ((0, 4), (-26, 4), (26, 4), (-44, 34))):
+                out.append(f'<text class="small" x="{lx}" y="{ly}">{name}</text>')
+    out.append('</svg>')
+    return ''.join(out)
+
+
+def glyph_svg(bits, colours=None, cls='vglyph'):
+    cells = []
+    for j, b in enumerate(bits):
+        x, y = (j % 2) * 11, (j // 2) * 11
+        fill = colours[j] if colours else ('#2b2116' if b == '1' else '#e6d3ad')
+        cells.append(f'<rect x="{x + 0.5}" y="{y + 0.5}" width="10" height="10" rx="1" fill="{fill}"/>')
+    return f'<svg class="{cls}" viewBox="0 0 22 22" aria-hidden="true">{"".join(cells)}</svg>'
+
+
+def venn_ladder():
+    """The five steps, the 16 cards and the flat 4-cube, as HTML."""
+    rc = ['var(--r0)', 'var(--r1)', 'var(--r2)', 'var(--r3)']
+    steps = [
+        ('Two sets', venn_svg('0000', labels=True), 'A circle for A, a circle for B, inside a box for everything else.'),
+        ('Four regions', venn_svg(colours=rc, labels='rows') + glyph_svg('1111', colours=rc),
+         'They cut the box into four regions, one per row of the truth table, and each matches a place in the glyph square.'),
+        ('2<sup>4</sup> = 16 shadings', '<div class="mini16">' + ''.join(venn_svg(bitstr(v, 4), cls='venn tiny') for v in range(15, -1, -1)) + '</div>',
+         'Shade each region or leave it, independently: 2 × 2 × 2 × 2 = 16 ways.'),
+        ('16 functions', '<div class="fnlist">' + ''.join(f'<span>{MEANING[bitstr(v, 4)]}</span>' for v in (8, 14, 11, 9)) + '<span>…</span></div>',
+         'Each shading is a function of A and B: true in the shaded regions, false elsewhere. There are exactly 16.'),
+        ('16 corners of a 4-cube', tesseract_svg(small=True),
+         'Give each region its own axis, 0 for unshaded and 1 for shaded. The 16 shadings are then the corners of a four-dimensional cube, and each edge changes one region.'),
+    ]
+    ladder = ''.join(f'<li><b>{t}</b>{fig}<span>{txt}</span></li>' for t, fig, txt in steps)
+    cards = ''.join(
+        f'<button type="button" class="vcard" data-v="{v}" aria-pressed="false">{venn_svg(bitstr(v, 4))}'
+        f'{glyph_svg(bitstr(v, 4))}<span>{MEANING[bitstr(v, 4)]}</span></button>'
+        for v in range(15, -1, -1))
+    return f'<ol class="ladder">{ladder}</ol>', cards, tesseract_svg()
+
+
+def tesseract_svg(small=False):
+    """The 4-cube drawn flat as a square inside a square: TT and TF are the
+    big square's sides, FT and FF a half-size square turned 25 degrees (the
+    turn and size that keep corners and edges furthest apart)."""
+    S = 62
+    vec = [(S, 0), (0, S)] + [(S / 2 * math.cos(math.radians(a)), S / 2 * math.sin(math.radians(a))) for a in (25, 115)]
+    def at(v):
+        x = sum(vec[i][0] for i in range(4) if v >> (3 - i) & 1)
+        y = -sum(vec[i][1] for i in range(4) if v >> (3 - i) & 1)
+        return x, y
+    pts = {v: at(v) for v in range(16)}
+    cx = (min(p[0] for p in pts.values()) + max(p[0] for p in pts.values())) / 2
+    cy = (min(p[1] for p in pts.values()) + max(p[1] for p in pts.values())) / 2
+    pts = {v: (x - cx, y - cy) for v, (x, y) in pts.items()}
+    m = max(max(abs(x), abs(y)) for x, y in pts.values()) + 11
+    vb = f'{f(-m)} {f(-m)} {f(2 * m)} {f(2 * m)}'
+    edges = ''.join(f'<line class="tedge" data-a="{v}" data-b="{v ^ (1 << b)}" x1="{f(pts[v][0])}" y1="{f(pts[v][1])}" '
+                    f'x2="{f(pts[v ^ (1 << b)][0])}" y2="{f(pts[v ^ (1 << b)][1])}"/>'
+                    for v in range(16) for b in range(4) if v < v ^ (1 << b))
+    if small:
+        dots = ''.join(f'<circle cx="{f(x)}" cy="{f(y)}" r="4"/>' for x, y in pts.values())
+        return f'<svg class="tess small" viewBox="{vb}" aria-hidden="true">{edges}{dots}</svg>'
+    nodes = ''.join(
+        f'<g class="tnode" data-v="{v}" transform="translate({f(x - 8)},{f(y - 8)}) scale(0.7273)">'
+        f'<rect x="-1" y="-1" width="24" height="24" rx="3" class="tbg"/>'
+        + ''.join(f'<rect x="{(j % 2) * 11 + 0.5}" y="{(j // 2) * 11 + 0.5}" width="10" height="10" rx="1" '
+                  f'class="{"on" if b == "1" else "off"}"/>' for j, b in enumerate(bitstr(v, 4)))
+        + '</g>' for v, (x, y) in pts.items())
+    return (f'<svg class="tess" viewBox="{vb}" role="img" '
+            f'aria-label="the 16 functions as the corners of a 4-cube drawn flat">{edges}{nodes}</svg>')
+
 def letter_svg(trace, hi_slot=None, s=10):
     pts = letter_points(trace, 0, 0, s)
     xs, ys = [p[0] for p in pts], [p[1] for p in pts]
@@ -729,6 +833,7 @@ def page(kerf):
     disc = ''.join(map(str, de_bruijn(2, 5)))
     sdb, s3, bits3 = stack_db_html(3)
     grids = grid_rings()
+    ladder, vcards, tess = venn_ladder()
     even, odd = grid_sides()
     sub = {
         '{{RULER}}': ps['window-ruler-300'].preview('the window ruler'),
@@ -739,6 +844,7 @@ def page(kerf):
         '{{COUNTING}}': counting_both(),
         '{{STACK_DB}}': sdb,
         '{{STACK_BITS}}': bits3,
+        '{{VENN_LADDER}}': ladder, '{{VENN_CARDS}}': vcards, '{{TESSERACT}}': tess,
         '{{GRID_LIST}}': grid_list(),
         '{{EVEN}}': ' '.join(even), '{{ODD}}': ' '.join(odd),
         '{{LOGIC_JSON}}': json.dumps(logic_rings()),

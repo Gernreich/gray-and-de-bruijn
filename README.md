@@ -33,6 +33,11 @@ What comes out:
   truth tables (Hamiltonian cycles on the 4-cube). In 48 of them every glyph
   sits across the ring from its negation. The page shows all 48, with a table
   that spells out each step. Ring 1 is the one on the cut file.
+- **From a Venn diagram to the 4-cube.** Two sets make four regions, the four
+  rows of a truth table and the four places of a Logic Alphabet glyph. Shading
+  them independently gives 2⁴ = 16 functions, and those are the corners of a
+  four-dimensional cube whose edges change one region each. The page draws the
+  ladder and links all 16 shaded Venn diagrams to the cube's corners.
 - **A grid-script ring.** No Gray cycle through the 28 letters can turn one
   step by only an eighth each time. Such a move always switches between
   even-bend and odd-bend letters, and there are 12 of one and 16 of the other.
