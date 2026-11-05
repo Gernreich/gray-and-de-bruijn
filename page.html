@@ -62,6 +62,8 @@ figcaption { font-size: 0.88rem; color: var(--ink-2); margin-top: 6px; }
   background: var(--stock); cursor: pointer; padding: 0; }
 .cells button[aria-pressed="true"] { background: var(--mark); }
 .cells button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#ringPick button, #ringPick select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 2px 10px; cursor: pointer; }
+.view3d button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 .out { font-size: 1.1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* stacks */
@@ -75,6 +77,7 @@ figcaption { font-size: 0.88rem; color: var(--ink-2); margin-top: 6px; }
 .row-stack { display: flex; flex-wrap: wrap; gap: 3px; margin: 12px 0; }
 .row-stack .L { width: 30px; height: 30px; border-radius: 4px; color: #fff; font-weight: 700;
   display: flex; align-items: center; justify-content: center; }
+.row-stack .L.sp { opacity: 0.35; width: 22px; }
 .row-stack .L.wrap { background: transparent !important; color: var(--ink-2); border: 1px dashed var(--rule); }
 
 /* logic table */
@@ -121,6 +124,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 <p><strong>A de Bruijn sequence</strong> is a single cyclic string in which every word of <em>n</em> symbols occurs exactly once. Slide a window <em>n</em> wide along it and you never see the same thing twice, so what you see tells you where you are. For two symbols and <em>n</em> = 5 it is 32 long: <code>{{DISC}}</code>.</p>
 
 <h2 id="ruler">A ruler that knows where it is</h2>
+<p class="credit"><strong>Not Michael's invention.</strong> This section and the next show standard engineering, absolute position encoders like those in machine tools and rotary knobs, to show the two walks at work. Claude designed these particular pieces. The ideas behind them are older than this project and belong to no one here.</p>
 <p>The bottom edge of this 300&nbsp;mm ruler is a track of 1&nbsp;mm cells, engraved or bare, cut from the de Bruijn sequence for windows of nine. Any nine neighbouring cells occur at only one place on it. Lay the reader card on the track, read the nine cells through its window, and the pattern names the millimetre where the window starts: 301 positions, from 0 to 300. The ordinary scale on the top edge is there to check against.</p>
 <div class="rulerbox">{{RULER}}</div>
 <p class="hint">The whole ruler is above and a close-up of the reader below it, and the close-up follows the reader wherever it goes. Click either one to move the reader, or set the nine cells by hand below.</p>
@@ -131,6 +135,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 </div>
 
 <h2 id="discs">Two discs, one question</h2>
+<p class="hint">Standard engineering too: Gray-code discs have been in rotary encoders since the 1950s, and single-track de Bruijn discs are a known alternative. Neither is Michael's idea.</p>
 <p>Both discs give 32 angles, one per 11.25°. The <strong>Gray disc</strong> uses five rings, read along one radius from the hole outwards. Turning past any boundary changes only one ring, so a reader caught on a boundary is never off by more than one step (in plain binary, 15 to 16 would change all five rings). The <strong>de Bruijn disc</strong> uses one ring of 32 cells and reads five neighbouring cells clockwise. One ring and five readers do the job of five rings and one reader.</p>
 <div class="pair">
 <figure>{{GRAY_DISC}}<figcaption>Gray disc: five rings, innermost the highest bit. The long ticks mark the quarters.</figcaption></figure>
@@ -139,39 +144,60 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 <div class="decoder" id="ddec"><div class="cells" role="group" aria-label="five cells of the de Bruijn disc, clockwise"></div><span class="out" aria-live="polite"></span></div>
 
 <h2 id="layers">Layer memory</h2>
-<p>In <a href="https://gernreich.github.io/atomic-layer-memory/">atomic layer memory</a> a bit is the site of a close-packed layer, 0 on A and 1 on C, with a spacer on B between every two bits. Writing the next number means moving the layers that changed. Counting from 0 to 15 in binary moves 26 layers. In Gray code it moves 15, exactly one per step. Moved layers are ringed in yellow:</p>
+<p>In <a href="https://gernreich.github.io/atomic-layer-memory/">atomic layer memory</a> a bit is the site of a close-packed layer, 0 on A and 1 on C, with a spacer on B between every two bits. The B layers are only a buffer: they carry no data, and nothing here counts or reads them. Writing the next number means moving the bit layers that changed, and the spacers never move. Counting from 0 to 15 in binary moves 26 bit layers. In Gray code it moves 15, exactly one per step. Moved layers are ringed in yellow:</p>
 {{COUNTING}}
 
 <h3>A stack with every window once</h3>
-<p>A close-packed layer can never sit on the same site as the layer below, so of the 27 words of three layers only 12 can exist (3 × 2 × 2). The stack below contains each of those 12 exactly once, read upwards in windows of three and wrapping round (the dashed cells repeat the start). The same holds for any window size <em>n</em>: such a stack is 3 × 2<sup><em>n</em>−1</sup> layers long, and <code>walks.py</code> builds and checks the ones for windows of 3, 4 and 5.</p>
+<p>Skip the B spacers and read only the bit layers, three at a time. The de Bruijn sequence <code>{{STACK_BITS}}</code>, written in the spacer code, gives a stack of 8 bit layers and 8 spacers. Going up the stack and wrapping round from the top to the bottom, each of the eight 3-bit words 000 to 111 turns up exactly once. The dashed cells repeat the start. A window of three bits therefore tells you where in the stack you are. The same works for windows of any size <em>n</em>, and <code>walks.py</code> checks 3, 4 and 5 bits.</p>
 {{STACK_DB}}
 <div class="view3d">
-<canvas id="stack3d" aria-label="the 12-layer stack as close-packed atoms, A red, B green, C blue"></canvas>
+<canvas id="stack3d" aria-label="the 16-layer spacer-code stack as close-packed atoms, A red, B green, C blue"></canvas>
 <div class="bar"><button type="button" id="stackStep">Next window</button><button type="button" id="stackSpin">Pause</button><span class="read" id="stackRead" aria-live="polite"></span></div>
-<p class="hint" style="margin:4px 0 0">The same twelve layers as close-packed atoms, the bottom layer at the bottom. The three bright layers are the current window; the others are dimmed. Each atom nests in a hollow of the layer below, so no layer repeats the site under it. Drag to turn it, scroll to zoom.</p>
+<p class="hint" style="margin:4px 0 0">The same sixteen layers as close-packed atoms, bottom layer at the bottom. The bright layers are the current window: three bit layers and the two spacers between them, which are lit only because they sit inside it. Every other layer is dimmed. Drag to turn it, scroll to zoom.</p>
 </div>
 
-<h3>A second way to read a stack</h3>
-<p>Because neighbouring layers always differ, each layer is one of two things relative to the layer below it: a turn up (A→B, B→C, C→A) or a turn down. Writing up as 1 and down as 0, the stack above, once round, reads <code>{{STACK_DB_STEPS}}</code>. This is the Hägg notation crystallographers use for close-packed polytypes. It stores one bit in every layer, twice the density of the spacer code. The cost is that a bit depends on two layers, so misreading one layer corrupts the bits on both sides of it. The spacer code reads every bit off a single layer.</p>
-
 <h2 id="logic">The Logic Alphabet as a ring</h2>
-<p>A Logic Alphabet glyph stands on a square of four places, one per row of the truth table (TT TF FT FF, set out as in <a href="https://gernreich.github.io/Logic-Research/zellweger.html">Logic Research</a>), with a stem wherever the function is true. A Gray code through the sixteen glyphs therefore adds or removes one stem at a time. Closed into a ring, that is a Hamiltonian cycle on the four-dimensional cube, and there are 1344 of them. <strong>48 of them are antipodal</strong>: every glyph sits directly across the ring from its negation, the glyph with every stem switched. This ring is one of the 48:</p>
-<figure class="solo">{{LOGIC_RING}}<figcaption>Engraved squares are stems. The glyphs stand upright because turning one turns its logic; the chevron marks the top.</figcaption></figure>
+<p>A Logic Alphabet glyph stands on a square of four places, one per row of the truth table, with a stem wherever the function is true. Set out as in <a href="https://gernreich.github.io/Logic-Research/zellweger.html">Logic Research</a>, the places are:</p>
+<ul>
+<li><strong>TT</strong>, top left: A true, B true</li>
+<li><strong>TF</strong>, top right: A true, B false</li>
+<li><strong>FT</strong>, bottom left: A false, B true</li>
+<li><strong>FF</strong>, bottom right: A false, B false</li>
+</ul>
+<p>A Gray code through the sixteen glyphs adds or removes one stem at a time. Closed into a ring, it is a Hamiltonian cycle on the four-dimensional cube, and there are 1344 of them. <strong>48 of them are antipodal</strong>: every glyph sits directly across the ring from its negation, the glyph with every stem switched. All 48 are below. Ring 1 is the one on the cut file.</p>
+<div class="decoder" id="ringPick">
+<button type="button" id="ringPrev" aria-label="previous ring">◀</button>
+<label>Ring <select id="ringSel" aria-label="which of the 48 rings"></select> of 48</label>
+<button type="button" id="ringNext" aria-label="next ring">▶</button>
+<span class="hint" id="ringNote"></span>
+</div>
+<figure class="solo"><svg class="piece" id="logicRing" viewBox="-63 -63 126 126" role="img" aria-label="the chosen Logic Alphabet ring"></svg><figcaption>Dark squares are stems, the engraving on the wood. The glyphs stand upright because turning one turns its logic; the chevron marks the top. The ring runs clockwise from the top.</figcaption></figure>
+
+<h3>Reading the table</h3>
+<p>Each row is one glyph, in order round the ring. <em>Rows</em> gives its four places as 1 (stem) or 0 (no stem) in the order TT TF FT FF, and <em>means</em> says when the function is true. <em>To get the next glyph</em> names the one stem that changes on the way to the next row: which place, which values of A and B that place stands for, and whether the stem is added or removed. Every step changes exactly one stem, which is what makes the ring a Gray code. <em>Across the ring</em> is the glyph eight steps on, and it is always the negation of this one.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>glyph</th><th>rows</th><th>means</th><th>to get the next glyph</th><th>across the ring</th></tr></thead>
+<tbody id="logicBody"></tbody></table></div>
+
+<h3>The ring as a piece of wood</h3>
+<p>The cut ring in 3D, 3&nbsp;mm ply with the glyphs engraved on top. It follows the ring chosen above, or switch to the grid-script ring.</p>
+<div class="view3d">
+<canvas id="ring3d" aria-label="the cut ring in 3D"></canvas>
+<div class="bar"><button type="button" id="ringShowLogic" aria-pressed="true">Logic ring</button><button type="button" id="ringShowGrid" aria-pressed="false">Grid ring</button><button type="button" id="ringSpin">Pause</button></div>
+<p class="hint" style="margin:4px 0 0">Drag to turn it, scroll to zoom.</p>
+</div>
+
 <h3>The same ring on the four-dimensional cube</h3>
-<p>Give each row of the truth table its own axis, TT, TF, FT and FF. The sixteen glyphs are then the corners of a four-dimensional cube, and each step of the ring runs along one edge. Below, the cube is turned in four dimensions and drawn in perspective, the way a cube's shadow is drawn on paper. Grey lines are the cube's 32 edges, and the 16 yellow ones are the ring. The two markers travel the ring half a turn apart. The line between them always passes through the centre, because each glyph lies opposite its negation.</p>
+<p>Give each row of the truth table its own axis, TT, TF, FT and FF. The sixteen glyphs are then the corners of a four-dimensional cube, and each step of the ring runs along one edge. Below, the cube is turned in four dimensions and drawn in perspective, the way a cube's shadow is drawn on paper. Grey lines are the cube's 32 edges, and the 16 yellow ones are the chosen ring. The two markers travel the ring half a turn apart. The line between them always passes through the centre, because each glyph lies opposite its negation.</p>
 <div class="view3d">
 <canvas id="cube4" aria-label="the Logic Alphabet ring drawn on a turning four-dimensional cube"></canvas>
 <div class="bar"><button type="button" id="cubeSpin">Pause</button><span class="read" id="cubeRead" aria-live="polite"></span></div>
 <p class="hint" style="margin:4px 0 0">Drag to turn it in three dimensions, scroll to zoom. On its own it keeps turning in the fourth dimension too.</p>
 </div>
-<div class="table-wrap"><table>
-<thead><tr><th>#</th><th>glyph</th><th>rows</th><th>means</th><th>next step</th><th>across the ring</th></tr></thead>
-<tbody>
-{{LOGIC_TABLE}}
-</tbody></table></div>
 
 <h2 id="grid">The grid script as a ring</h2>
 <p>A grid-script letter is two steps among the eight grid directions, traced either way round. The tightest Gray code would change one step by an eighth of a turn each time. That is impossible, and the reason is parity. Call the turn between a letter's two steps its bend. Turning one step by an eighth changes the bend by one, so such a move always goes between an even-bend letter and an odd-bend letter. There are 12 even-bend letters ({{EVEN}}) and 16 odd-bend ones ({{ODD}}). A cycle that alternates between the two kinds needs the same number of each, so no cycle uses eighth-turns alone.</p>
+<p><strong>Why the kinds are not half and half.</strong> Count the tracings. The first step can go in any of 8 directions, and the second step can turn by 0, 1, 2, 3 or 4 eighths, the last four either way. That gives 8 possible turns: 4 even (straight on, a quarter turn left or right, and doubling straight back) and 4 odd (an eighth or three eighths, left or right). That would be half and half. But the script forbids doubling back, because the two steps would draw over each other, and doubling back is an even turn. That leaves 3 even turns and 4 odd ones for each first step: 8 × 3 = 24 even tracings and 8 × 4 = 32 odd ones. Each letter can be traced from either end, so halve both: 12 even-bend letters and 16 odd-bend ones. Every possible letter is in the alphabet; the one missing turn is what tips the balance.</p>
 <p>The ring therefore allows any change to one step and counts the turning. A cycle through all 28 can alternate kinds at most 24 times, and each of the 4 remaining moves stays within one kind and costs at least a quarter turn. That makes 24 + 4 × 2 = 32 eighths at the least, and the ring below reaches it. The stroke drawn in yellow is the one that turned on the way in from the letter before. The dot marks where the pen starts.</p>
 <div class="glets">{{GRID_LIST}}</div>
 <figure class="solo">{{GRID_RING}}<figcaption>The grid ring, starting from G at the top and running clockwise. Letters stand upright, because the script reads them by direction. Of its 28 changes, 24 are eighth-turns and 4 are quarter-turns.</figcaption></figure>
@@ -238,14 +264,14 @@ setRuler(137);
 const setDisc = decoder('ddec', DISC, 5, true, p => 'sector ' + p + ', ' + (p * 11.25) + '° clockwise from the top');
 setDisc(9);
 
-const LOGIC = {{LOGIC_JSON}}, STACK = {{STACK_JSON}}, LOGIC_MEANING = {{MEANING_JSON}};
+const LOGIC = {{LOGIC_JSON}}, STACK = {{STACK_JSON}}, LOGIC_MEANING = {{MEANING_JSON}}, GRID = {{GRID_JSON}};
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // a canvas with a scene, a group turned by dragging, and zoom on the wheel
 function stage(canvas, camZ) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(35, 1, 0.1, 200), group = new THREE.Group();
+  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(35, 1, 0.1, 5000), group = new THREE.Group();
   scene.add(group); cam.position.set(0, 0, camZ);
   scene.add(new THREE.AmbientLight(0xffffff, 0.55));
   const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(3, 5, 8); scene.add(sun);
@@ -280,12 +306,12 @@ function pauseButton(btn, st) {
   label();
 }
 
-// the 12-layer stack ------------------------------------------------------
+// the spacer-code stack ---------------------------------------------------
 (function () {
-  const st = stage(document.getElementById('stack3d'), 19.5);
+  const st = stage(document.getElementById('stack3d'), 25);
   const SITE = { A: [0, 0], B: [0.5, Math.sqrt(3) / 6], C: [1, Math.sqrt(3) / 3] };
   const COLOR = { A: 0xd62828, B: 0x1e963c, C: 0x2850d6 };
-  const H = Math.sqrt(2 / 3), R = 2.3, n = STACK.length;
+  const H = Math.sqrt(2 / 3), R = 2.3, n = STACK.length, nb = n / 2;
   const ball = new THREE.SphereGeometry(0.5, 20, 14), layers = [];
   STACK.forEach((site, k) => {
     const pts = [];
@@ -295,24 +321,142 @@ function pauseButton(btn, st) {
     }
     const mat = new THREE.MeshLambertMaterial({ color: COLOR[site], transparent: true });
     const mesh = new THREE.InstancedMesh(ball, mat, pts.length), m = new THREE.Matrix4();
-    // layers stack up the screen: the stacking axis is y
     pts.forEach((p, i) => { m.makeTranslation(p[0], (k - (n - 1) / 2) * H, p[1]); mesh.setMatrixAt(i, m); });
     st.group.add(mesh); layers.push(mat);
   });
   let w = 0;
   const read = document.getElementById('stackRead');
   function show() {
-    const idx = [w, (w + 1) % n, (w + 2) % n];
-    layers.forEach((mat, k) => { mat.opacity = idx.includes(k) ? 1 : 0.13; mat.depthWrite = idx.includes(k); });
-    read.textContent = 'Window ' + (w + 1) + ' of ' + n + ': layers ' + idx.map(i => i + 1).join(', ') + ' read ' + idx.map(i => STACK[i]).join(' ');
+    const lit = [0, 1, 2, 3, 4].map(d => (2 * w + d) % n);             // three bits and the two spacers between
+    layers.forEach((mat, k) => { const on = lit.includes(k); mat.opacity = on ? 1 : 0.12; mat.depthWrite = on; });
+    const bits = [0, 2, 4].map(d => STACK[(2 * w + d) % n] === 'C' ? '1' : '0').join('');
+    read.textContent = 'Window ' + (w + 1) + ' of ' + nb + ': bit layers ' + [0, 2, 4].map(d => (2 * w + d) % n + 1).join(', ') + ' read ' + bits;
   }
-  document.getElementById('stackStep').addEventListener('click', () => { w = (w + 1) % n; show(); });
+  document.getElementById('stackStep').addEventListener('click', () => { w = (w + 1) % nb; show(); });
   pauseButton(document.getElementById('stackSpin'), st);
   show();
   let last = performance.now(), acc = 0;
   (function frame(t) {
     const dt = Math.max(0, (t - last) / 1000); last = t;
-    if (st.spin && !st.held) { st.yaw += dt * 0.35; acc += dt; if (acc > 2.2) { acc = 0; w = (w + 1) % n; show(); } }
+    if (st.spin && !st.held) { st.yaw += dt * 0.35; acc += dt; if (acc > 2.2) { acc = 0; w = (w + 1) % nb; show(); } }
+    st.draw(); requestAnimationFrame(frame);
+  })(last);
+})();
+
+// the 48 Logic rings: picker, flat ring, table ----------------------------
+const ROWNAME = { TT: 'A true, B true', TF: 'A true, B false', FT: 'A false, B true', FF: 'A false, B false' };
+const ROWS = ['TT', 'TF', 'FT', 'FF'];
+const ringListeners = [];
+let ringNo = 0;
+function cellsOf(cx, cy, bits, cell, gap) {
+  return [...bits].map((b, j) => ({ on: b === '1',
+    x: cx - cell - gap / 2 + (j % 2) * (cell + gap), y: cy - cell - gap / 2 + Math.floor(j / 2) * (cell + gap) }));
+}
+function ringPos(i, n, r) { const a = 2 * Math.PI * i / n; return [r * Math.sin(a), -r * Math.cos(a)]; }
+function drawFlatRing(ring) {
+  const svg = document.getElementById('logicRing');
+  let s = '<path class="stock" fill-rule="evenodd" d="M-62,0 A62,62 0 1 0 62,0 A62,62 0 1 0 -62,0 Z M-40,0 A40,40 0 1 0 40,0 A40,40 0 1 0 -40,0 Z"/>';
+  ring.forEach((t, i) => {
+    const [cx, cy] = ringPos(i, 16, 51);
+    cellsOf(cx, cy, t, 5, 1).forEach(c => {
+      if (c.on) s += `<rect class="eng" x="${c.x + 0.4}" y="${c.y + 0.4}" width="4.2" height="4.2"/>`;
+      s += `<rect class="sco" x="${c.x}" y="${c.y}" width="5" height="5"/>`;
+    });
+  });
+  s += '<path class="sco" d="M-2,-43.5 L0,-46 L2,-43.5"/>';
+  svg.innerHTML = s;
+}
+function fillTable(ring) {
+  const body = document.getElementById('logicBody');
+  body.innerHTML = ring.map((t, i) => {
+    const nxt = ring[(i + 1) % 16], j = [0, 1, 2, 3].find(k => t[k] !== nxt[k]);
+    const sq = [...t].map(b => `<i class="${b === '1' ? 'on' : ''}"></i>`).join('');
+    const act = (nxt[j] === '1' ? 'add' : 'remove') + ' the ' + ROWS[j] + ' stem (' + ROWNAME[ROWS[j]] + ')';
+    return `<tr><td class="num">${i}</td><td><span class="sq">${sq}</span></td><td><code>${t}</code></td>` +
+      `<td>${LOGIC_MEANING[t]}</td><td>${act}</td><td>${LOGIC_MEANING[ring[(i + 8) % 16]]}</td></tr>`;
+  }).join('');
+}
+function setRing(k) {
+  ringNo = (k + 48) % 48;
+  const ring = LOGIC[ringNo];
+  document.getElementById('ringSel').value = ringNo;
+  document.getElementById('ringNote').textContent = ringNo === 0 ? 'the ring on the cut file' : '';
+  drawFlatRing(ring); fillTable(ring);
+  ringListeners.forEach(f => f(ring));
+}
+(function () {
+  const sel = document.getElementById('ringSel');
+  LOGIC.forEach((_, i) => { const o = document.createElement('option'); o.value = i; o.textContent = i + 1; sel.appendChild(o); });
+  sel.addEventListener('change', () => setRing(+sel.value));
+  document.getElementById('ringPrev').addEventListener('click', () => setRing(ringNo - 1));
+  document.getElementById('ringNext').addEventListener('click', () => setRing(ringNo + 1));
+})();
+
+// the ring as a piece of wood ---------------------------------------------
+(function () {
+  const st = stage(document.getElementById('ring3d'), 235);
+  st.pitch = 0.75;
+  const R = 68, N = 1024, canvas = document.createElement('canvas');
+  canvas.width = canvas.height = N;
+  const g = canvas.getContext('2d'), tex = new THREE.CanvasTexture(canvas);
+  tex.repeat.set(1 / (2 * R), 1 / (2 * R)); tex.offset.set(0.5, 0.5);
+  const wood = new THREE.MeshLambertMaterial({ color: 0xd9c49c });
+  const top = new THREE.MeshLambertMaterial({ map: tex });
+  let mesh = null, kind = 'logic';
+  function build(outer, inner) {
+    if (mesh) { st.group.remove(mesh); mesh.geometry.dispose(); }
+    const shape = new THREE.Shape(); shape.absarc(0, 0, outer, 0, Math.PI * 2, false);
+    const hole = new THREE.Path(); hole.absarc(0, 0, inner, 0, Math.PI * 2, true); shape.holes.push(hole);
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: 3, bevelEnabled: false, curveSegments: 96 });
+    geo.translate(0, 0, -1.5);
+    mesh = new THREE.Mesh(geo, [top, wood]);
+    mesh.rotation.x = -Math.PI / 2;            // lie flat, the top face up
+    st.group.add(mesh);
+  }
+  // drawing coordinates: mm, y down, as in the cut file; shape y is up, so flip
+  const px = v => (v + R) / (2 * R) * N;
+  function paper() { g.fillStyle = '#e6d3ad'; g.fillRect(0, 0, N, N); g.fillStyle = g.strokeStyle = '#2b2116'; g.lineCap = g.lineJoin = 'round'; }
+  function chevron(r) { g.lineWidth = 2; g.beginPath(); g.moveTo(px(-2), px(-r - 3.5)); g.lineTo(px(0), px(-r - 6)); g.lineTo(px(2), px(-r - 3.5)); g.stroke(); }
+  function drawLogic(ring) {
+    paper(); const k = N / (2 * R);
+    ring.forEach((t, i) => {
+      const [cx, cy] = ringPos(i, 16, 51);
+      cellsOf(cx, cy, t, 5, 1).forEach(c => {
+        g.lineWidth = 1.5; g.strokeRect(px(c.x), px(c.y), 5 * k, 5 * k);
+        if (c.on) g.fillRect(px(c.x + 0.4), px(c.y + 0.4), 4.2 * k, 4.2 * k);
+      });
+    });
+    chevron(40); tex.needsUpdate = true;
+  }
+  const STEP = { E: [1, 0], W: [-1, 0], N: [0, -1], S: [0, 1], NE: [1, -1], NW: [-1, -1], SE: [1, 1], SW: [-1, 1] };
+  function drawGrid() {
+    paper();
+    GRID.forEach(([name, trace], i) => {
+      const [cx, cy] = ringPos(i, 28, 56), s = 2.6;
+      const pts = [[0, 0]]; trace.forEach(d => { const p = pts[pts.length - 1]; pts.push([p[0] + s * STEP[d][0], p[1] + s * STEP[d][1]]); });
+      const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+      const ox = cx - (Math.min(...xs) + Math.max(...xs)) / 2, oy = cy - (Math.min(...ys) + Math.max(...ys)) / 2;
+      g.lineWidth = 5; g.beginPath(); pts.forEach((p, j) => (j ? g.lineTo : g.moveTo).call(g, px(p[0] + ox), px(p[1] + oy))); g.stroke();
+      g.beginPath(); g.arc(px(pts[0][0] + ox), px(pts[0][1] + oy), 0.6 * N / (2 * R) + 2, 0, 2 * Math.PI); g.fill();
+    });
+    chevron(44); tex.needsUpdate = true;
+  }
+  // canvas y runs down and texture v runs up: flip the texture to match the shape's y-up
+  function show(which) {
+    kind = which;
+    document.getElementById('ringShowLogic').setAttribute('aria-pressed', which === 'logic');
+    document.getElementById('ringShowGrid').setAttribute('aria-pressed', which === 'grid');
+    if (which === 'logic') { build(62, 40); drawLogic(LOGIC[ringNo]); } else { build(68, 44); drawGrid(); }
+  }
+  ringListeners.push(ring => { if (kind === 'logic') drawLogic(ring); });
+  document.getElementById('ringShowLogic').addEventListener('click', () => show('logic'));
+  document.getElementById('ringShowGrid').addEventListener('click', () => show('grid'));
+  pauseButton(document.getElementById('ringSpin'), st);
+  show('logic');
+  let last = performance.now();
+  (function frame(t) {
+    const dt = Math.max(0, (t - last) / 1000); last = t;
+    if (st.spin && !st.held) st.yaw += dt * 0.3;
     st.draw(); requestAnimationFrame(frame);
   })(last);
 })();
@@ -322,27 +466,27 @@ function pauseButton(btn, st) {
   const st = stage(document.getElementById('cube4'), 16.5);
   st.pitch = 0.25;
   const verts = [...Array(16).keys()].map(v => [3, 2, 1, 0].map(b => (v >> b & 1) ? 1 : -1)); // TT TF FT FF
-  const ringIdx = LOGIC.map(t => parseInt(t, 2));
-  const Y = new THREE.Vector3(0, 1, 0);
-  function rod(r, color, opacity) {
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 10),
-      new THREE.MeshLambertMaterial({ color, transparent: opacity < 1, opacity }));
-    st.group.add(mesh); return mesh;
-  }
+  let ringIdx = [];
+  const Y = new THREE.Vector3(0, 1, 0), unit = new THREE.CylinderGeometry(1, 1, 1, 10);
+  const yellow = new THREE.MeshLambertMaterial({ color: 0xeda100 });
+  const grey = new THREE.MeshLambertMaterial({ color: 0x8a8a84, transparent: true, opacity: 0.55 });
+  function rod(r, mat) { const m = new THREE.Mesh(unit, mat); m.userData.r = r; st.group.add(m); return m; }
   function place(mesh, a, b) {
     const d = new THREE.Vector3().subVectors(b, a), len = d.length();
     mesh.position.copy(a).addScaledVector(d, 0.5);
-    mesh.quaternion.setFromUnitVectors(Y, d.normalize()); mesh.scale.set(1, len, 1);
+    mesh.quaternion.setFromUnitVectors(Y, d.normalize()); mesh.scale.set(mesh.userData.r, len, mesh.userData.r);
   }
   const edges = [];
-  for (let v = 0; v < 16; v++) for (let b = 0; b < 4; b++) {
-    const u = v ^ (1 << b);
-    if (u > v) {
-      const onRing = ringIdx.some((x, i) => (x === v && ringIdx[(i + 1) % 16] === u) || (x === u && ringIdx[(i + 1) % 16] === v));
-      edges.push([v, u, onRing ? rod(0.055, 0xeda100, 1) : rod(0.018, 0x8a8a84, 0.55)]);
-    }
+  for (let v = 0; v < 16; v++) for (let b = 0; b < 4; b++) { const u = v ^ (1 << b); if (u > v) edges.push([v, u, rod(0.018, grey)]); }
+  function useRing(ring) {
+    ringIdx = ring.map(t => parseInt(t, 2));
+    edges.forEach(e => {
+      const [v, u, m] = e;
+      const on = ringIdx.some((x, i) => (x === v && ringIdx[(i + 1) % 16] === u) || (x === u && ringIdx[(i + 1) % 16] === v));
+      m.material = on ? yellow : grey; m.userData.r = on ? 0.055 : 0.018;
+    });
   }
-  // each corner wears its glyph: a 2 x 2 square, stems filled
+  ringListeners.push(useRing);
   function glyph(bits) {
     const c = document.createElement('canvas'); c.width = c.height = 64;
     const g = c.getContext('2d');
@@ -358,11 +502,10 @@ function pauseButton(btn, st) {
   const markA = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 14), new THREE.MeshLambertMaterial({ color: 0xe34948 }));
   const markB = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 14), new THREE.MeshLambertMaterial({ color: 0x2a78d6 }));
   st.group.add(markA, markB);
-  const chord = rod(0.025, 0x52514e, 0.9);
+  const chord = rod(0.025, new THREE.MeshLambertMaterial({ color: 0x52514e }));
   const read = document.getElementById('cubeRead');
   pauseButton(document.getElementById('cubeSpin'), st);
-
-  let a4 = 0.6, t = 0, shown = -1;
+  let a4 = 0.6, t = 0, shown = '';
   const P = verts.map(() => new THREE.Vector3());
   function project() {
     const ca = Math.cos(a4), sa = Math.sin(a4), cb = Math.cos(a4 * 0.62), sb = Math.sin(a4 * 0.62);
@@ -382,19 +525,19 @@ function pauseButton(btn, st) {
   (function frame(now) {
     const dt = Math.max(0, (now - last) / 1000); last = now;
     if (st.spin && !st.held) { a4 += dt * 0.25; t = (t + dt * 0.45) % 16; }
-    project();
-    edges.forEach(([v, u, m]) => place(m, P[v], P[u]));
-    sprites.forEach((sp, i) => sp.position.copy(P[i]));
-    const a = along(t), b = along(t + 8);
-    markA.position.copy(a); markB.position.copy(b); place(chord, a, b);
-    const i = Math.round(t) % 16;
-    if (i !== shown) {
-      shown = i;
-      read.textContent = LOGIC_MEANING[LOGIC[i]] + '  ↔  ' + LOGIC_MEANING[LOGIC[(i + 8) % 16]];
+    if (ringIdx.length) {
+      project();
+      edges.forEach(([v, u, m]) => place(m, P[v], P[u]));
+      sprites.forEach((sp, i) => sp.position.copy(P[i]));
+      const a = along(t), b = along(t + 8);
+      markA.position.copy(a); markB.position.copy(b); place(chord, a, b);
+      const ring = LOGIC[ringNo], i = Math.round(t) % 16, txt = LOGIC_MEANING[ring[i]] + '  ↔  ' + LOGIC_MEANING[ring[(i + 8) % 16]];
+      if (txt !== shown) { shown = txt; read.textContent = txt; }
     }
     st.draw(); requestAnimationFrame(frame);
   })(last);
 })();
+setRing(0);
 </script>
 </body>
 </html>

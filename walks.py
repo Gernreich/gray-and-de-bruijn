@@ -68,8 +68,6 @@ def bitstr(v, n):
 
 # ------------------------------------------------- 1. layer memory: A B C
 
-SITES = 'ABC'
-UP = {'A': 'B', 'B': 'C', 'C': 'A'}          # one turn of the stacking
 
 
 def spacer_stack(bits):
@@ -88,37 +86,12 @@ def counting(n, codes):
     return st, [moved(st[i], st[i + 1]) for i in range(len(st) - 1)]
 
 
-def stack_de_bruijn(n):
-    """A cyclic stack of A B C layers, no two neighbours alike (a close-packed
-    layer cannot sit on the site below it), in which every possible window of
-    n layers turns up once. Such windows number 3 * 2^(n-1): an Euler circuit
-    on the graph of (n-1)-layer windows (Hierholzer's walk)."""
-    nodes = [w for w in _words(n - 1)]
-    out = {v: [v[1:] + (s,) for s in SITES if s != v[-1]] for v in nodes}
-    start = nodes[0]
-    stack, circuit, it = [start], [], {v: 0 for v in nodes}
-    while stack:
-        v = stack[-1]
-        if it[v] < len(out[v]):
-            stack.append(out[v][it[v]])
-            it[v] += 1
-        else:
-            circuit.append(stack.pop())
-    circuit.reverse()
-    return [v[-1] for v in circuit[1:]]
-
-
-def _words(m):
-    res = [(s,) for s in SITES]
-    for _ in range(m - 1):
-        res = [w + (s,) for w in res for s in SITES if s != w[-1]]
-    return res
-
-
-def steps(stack):
-    """Read a stack the other way: each layer is one turn up (A->B->C->A),
-    1, or one turn down, 0, from the layer below."""
-    return ''.join('1' if UP[a] == b else '0' for a, b in zip(stack, stack[1:]))
+def spacer_de_bruijn(n):
+    """The spacer code wrapped round a binary de Bruijn sequence: the B
+    spacers are ignored, and every n-bit word turns up exactly once among
+    the bit layers, read in windows of n and wrapping round."""
+    bits = ''.join(map(str, de_bruijn(2, n)))
+    return list(spacer_stack(bits) + 'B'), bits
 
 
 # ------------------------------------------------- 2. the Logic Alphabet
@@ -160,12 +133,23 @@ def antipodal(c):
     return all(c[(i + 8) % 16] == c[i] ^ 15 for i in range(16))
 
 
+def logic_rings():
+    """The 48 antipodal Gray cycles, each turned to start at 1111 and read
+    the way round whose second glyph is the larger number, highest first."""
+    seen = set()
+    for c in logic_cycles():
+        if antipodal(c):
+            i = c.index(15)
+            r = c[i:] + c[:i]
+            if r[1] < r[-1]:
+                r = [r[0]] + r[:0:-1]
+            seen.add(tuple(r))
+    return [[bitstr(v, 4) for v in r] for r in sorted(seen, reverse=True)]
+
+
 def logic_ring():
-    """The first antipodal Gray cycle found, turned to start at 1111: each
-    truth table has its negation directly across the ring."""
-    c = next(c for c in logic_cycles() if antipodal(c))
-    i = c.index(15)
-    return [bitstr(v, 4) for v in c[i:] + c[:i]]
+    """The ring on the cut file: the first of the 48."""
+    return logic_rings()[0]
 
 
 # ------------------------------------------------- 3. the grid script
@@ -303,18 +287,24 @@ def check():
     gst, gmv = counting(4, gray(4))
     ok(sum(mv) == 26 and sum(gmv) == 15 and max(gmv) == 1,
        f'counting 0..15 in the layer stack moves {sum(mv)} layers in binary, {sum(gmv)} in Gray')
+    ok(all(a == b for a, b in zip(st[0], gst[0])) and
+       all(s[i] == 'B' for s in st + gst for i in range(1, len(s), 2)),
+       'the B spacers never move: only the A and C bit layers count')
     for n in (3, 4, 5):
-        s = stack_de_bruijn(n)
-        w = windows(s, n)
-        good = all(a != b for a, b in zip(s, s[1:] + s[:1]))
-        ok(good and len(s) == 3 * 2 ** (n - 1) and len(set(w)) == len(s) == len(_words(n)),
-           f'layer stack, windows of {n}: {len(s)} layers, no two neighbours alike, every window once')
-    s = stack_de_bruijn(4)
-    ok(steps(s) and all(x != y for x, y in zip(s, s[1:])), 'steps() reads every layer after the first')
+        s, bits = spacer_de_bruijn(n)
+        w = windows(s[0::2], n)
+        ok(len(s) == 2 ** (n + 1) and all(a != b for a, b in zip(s, s[1:] + s[:1])) and
+           s[1::2] == ['B'] * 2 ** n and len(set(w)) == 2 ** n,
+           f'spacer stack, windows of {n} bits: {len(s)} layers, B ignored, every {n}-bit word once')
     cyc = logic_cycles()
     ok(len(cyc) == 2688, f'{len(cyc) // 2} Gray cycles through the 16 truth tables')
     anti = [c for c in cyc if antipodal(c)]
     ok(len(anti) == 96, f'{len(anti) // 2} of them antipodal')
+    rings = logic_rings()
+    ok(len(rings) == 48 and len({tuple(r) for r in rings}) == 48 and
+       all(sorted(r) == sorted(MEANING) and r[0] == '1111' and antipodal([int(t, 2) for t in r])
+           and all(moved(r[i], r[(i + 1) % 16]) == 1 for i in range(16)) for r in rings),
+       'the 48 rings listed: all different, all antipodal Gray cycles from 1111')
     ring = logic_ring()
     ok(sorted(ring) == sorted(MEANING) and
        all(moved(ring[i], ring[(i + 1) % 16]) == 1 for i in range(16)) and
@@ -630,24 +620,12 @@ def counting_html(n=4):
 
 
 def stack_db_html(n=3):
-    s = stack_de_bruijn(n)
-    cells = ''.join(f'<span class="L" style="background:{COL[c]}">{c}</span>' for c in s)
+    s, bits = spacer_de_bruijn(n)
+    cells = ''.join(f'<span class="L{" sp" if c == "B" else ""}" style="background:{COL[c]}">{c}</span>'
+                    for c in s)
     return (f'<div class="row-stack" aria-label="a cyclic stack of {len(s)} layers">{cells}'
-            f'<span class="L wrap">{s[0]}</span><span class="L wrap">{s[1]}</span></div>'), s
-
-
-def logic_table():
-    ring = logic_ring()
-    tr = []
-    for i, t in enumerate(ring):
-        nxt = ring[(i + 1) % 16]
-        row = next(ROWS[j] for j in range(4) if t[j] != nxt[j])
-        sq = ''.join(f'<i class="{"on" if b == "1" else ""}"></i>' for b in t)
-        tr.append(f'<tr><td class="num">{i}</td><td><span class="sq">{sq}</span></td>'
-                  f'<td><code>{t}</code></td><td>{MEANING[t]}</td>'
-                  f'<td>{"on" if nxt[ROWS.index(row)] == "1" else "off"} {row}</td>'
-                  f'<td>{MEANING[ring[(i + 8) % 16]]}</td></tr>')
-    return '\n'.join(tr)
+            + ''.join(f'<span class="L wrap{" sp" if c == "B" else ""}">{c}</span>' for c in s[:4])
+            + '</div>'), s, bits
 
 
 def letter_svg(trace, hi_slot=None, s=10):
@@ -678,23 +656,22 @@ def page(kerf):
     ps = {p.name: p for p in pieces(kerf)}
     track = ''.join(map(str, ruler_track(300)))
     disc = ''.join(map(str, de_bruijn(2, 5)))
-    sdb, s3 = stack_db_html(3)
+    sdb, s3, bits3 = stack_db_html(3)
     even, odd = grid_sides()
     sub = {
         '{{RULER}}': ps['window-ruler-300'].preview('the window ruler'),
         '{{READER}}': ps['window-reader'].preview('the reader card'),
         '{{GRAY_DISC}}': ps['gray-disc'].preview('the Gray code disc'),
         '{{DB_DISC}}': ps['de-bruijn-disc'].preview('the de Bruijn disc'),
-        '{{LOGIC_RING}}': ps['logic-ring'].preview('the Logic Alphabet ring'),
         '{{GRID_RING}}': ps['grid-ring'].preview('the grid-script ring'),
         '{{TRACK}}': track, '{{DISC}}': disc,
         '{{COUNTING}}': counting_html(),
         '{{STACK_DB}}': sdb,
-        '{{STACK_DB_STEPS}}': steps(s3 + s3[:1]),
-        '{{LOGIC_TABLE}}': logic_table(),
+        '{{STACK_BITS}}': bits3,
         '{{GRID_LIST}}': grid_list(),
         '{{EVEN}}': ' '.join(even), '{{ODD}}': ' '.join(odd),
-        '{{LOGIC_JSON}}': json.dumps(logic_ring()),
+        '{{LOGIC_JSON}}': json.dumps(logic_rings()),
+        '{{GRID_JSON}}': json.dumps([[k, list(LETTERS[k])] for k in grid_ring()]),
         '{{STACK_JSON}}': json.dumps(s3),
         '{{MEANING_JSON}}': json.dumps(MEANING),
     }
@@ -703,6 +680,8 @@ def page(kerf):
         assert a in html, a
         html = html.replace(a, b)
     assert '{{' not in html
+    # every link to another page opens in a new tab
+    html = html.replace('<a href="http', '<a target="_blank" rel="noopener" href="http')
     return html
 
 
