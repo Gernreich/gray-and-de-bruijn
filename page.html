@@ -62,7 +62,7 @@ figcaption { font-size: 0.88rem; color: var(--ink-2); margin-top: 6px; }
   background: var(--stock); cursor: pointer; padding: 0; }
 .cells button[aria-pressed="true"] { background: var(--mark); }
 .cells button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-#ringPick button, #ringPick select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 2px 10px; cursor: pointer; }
+#ringPick button, #ringPick select, #gridPick button, #gridPick select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 2px 10px; cursor: pointer; }
 .view3d button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 .out { font-size: 1.1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 
@@ -98,15 +98,27 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 .letter line { stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; }
 .letter line.turned { stroke: var(--hi); }
 .letter circle { fill: var(--ink); }
+.morphbox { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 16px 24px; align-items: center;
+  background: var(--surface); border-radius: 6px; padding: 16px; margin: 16px 0; }
+@media (max-width: 600px) { .morphbox { grid-template-columns: minmax(0, 1fr); } }
+#morph { width: 100%; aspect-ratio: 1; display: block; }
+#morph line { stroke-width: 9; stroke-linecap: round; }
+#morph .fixed { stroke: var(--ink); } #morph .moving { stroke: var(--hi); }
+#morph .dot { fill: var(--ink); transition: opacity 0.2s; }
+.mname { font-size: 2.6rem; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+.morphbox button { font: inherit; font-size: 0.85rem; color: var(--ink); background: transparent; border: 1px solid var(--rule); border-radius: 4px; padding: 3px 12px; cursor: pointer; }
 
 /* 3D views */
 .view3d { background: var(--surface); border-radius: 6px; padding: 12px; margin: 16px 0; }
 .view3d canvas { display: block; width: 100%; height: 440px; touch-action: none; cursor: grab; border-radius: 4px; }
 .view3d canvas:active { cursor: grabbing; }
+.view3d canvas[hidden] { display: none; }
+.ringview canvas.flat { width: min(100%, 460px); height: auto; aspect-ratio: 1; margin: 0 auto; cursor: default; }
 .view3d .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 8px; font-size: 0.9rem; }
 .view3d button { font: inherit; font-size: 0.85rem; color: var(--ink); background: transparent;
   border: 1px solid var(--rule); border-radius: 4px; padding: 3px 12px; cursor: pointer; }
 .view3d button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tog { font: inherit; font-size: 0.85rem; color: var(--ink); background: transparent; border: 1px solid var(--rule); border-radius: 4px; padding: 3px 12px; cursor: pointer; }
 .view3d .read { font-weight: 600; font-variant-numeric: tabular-nums; }
 @media (max-width: 600px) { .view3d canvas { height: 340px; } }
 </style>
@@ -141,6 +153,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 <figure>{{GRAY_DISC}}<figcaption>Gray disc: five rings, innermost the highest bit. The long ticks mark the quarters.</figcaption></figure>
 <figure>{{DB_DISC}}<figcaption>De Bruijn disc: one ring, the sequence above running clockwise from the top.</figcaption></figure>
 </div>
+<p class="hint">Set the five cells by hand, and the yellow outline on the de Bruijn disc shows where those five cells sit, read clockwise.</p>
 <div class="decoder" id="ddec"><div class="cells" role="group" aria-label="five cells of the de Bruijn disc, clockwise"></div><span class="out" aria-live="polite"></span></div>
 
 <h2 id="layers">Layer memory</h2>
@@ -157,50 +170,64 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 </div>
 
 <h2 id="logic">The Logic Alphabet as a ring</h2>
-<p>A Logic Alphabet glyph stands on a square of four places, one per row of the truth table, with a stem wherever the function is true. Set out as in <a href="https://gernreich.github.io/Logic-Research/zellweger.html">Logic Research</a>, the places are:</p>
+<p>A Logic Alphabet glyph stands on a square of four places, one per row of the truth table, with a mark in each place where the function is true. Zellweger calls those marks <em>stems</em>; here each is drawn as a filled square. Set out as in <a href="https://gernreich.github.io/Logic-Research/zellweger.html">Logic Research</a>, the places are:</p>
 <ul>
 <li><strong>TT</strong>, top left: A true, B true</li>
 <li><strong>TF</strong>, top right: A true, B false</li>
 <li><strong>FT</strong>, bottom left: A false, B true</li>
 <li><strong>FF</strong>, bottom right: A false, B false</li>
 </ul>
-<p>A Gray code through the sixteen glyphs adds or removes one stem at a time. Closed into a ring, it is a Hamiltonian cycle on the four-dimensional cube, and there are 1344 of them. <strong>48 of them are antipodal</strong>: every glyph sits directly across the ring from its negation, the glyph with every stem switched. All 48 are below. Ring 1 is the one on the cut file.</p>
+<p>A Gray code through the sixteen glyphs fills or empties one square at a time. Closed into a ring, it is a Hamiltonian cycle on the four-dimensional cube, and there are 1344 of them. <strong>48 of them are antipodal</strong>: every glyph sits directly across the ring from its negation, the glyph with every square switched, filled for empty and empty for filled. All 48 are below. Ring 1 is the one on the cut file.</p>
 <div class="decoder" id="ringPick">
 <button type="button" id="ringPrev" aria-label="previous ring">◀</button>
 <label>Ring <select id="ringSel" aria-label="which of the 48 rings"></select> of 48</label>
 <button type="button" id="ringNext" aria-label="next ring">▶</button>
 <span class="hint" id="ringNote"></span>
 </div>
-<figure class="solo"><svg class="piece" id="logicRing" viewBox="-63 -63 126 126" role="img" aria-label="the chosen Logic Alphabet ring"></svg><figcaption>Dark squares are stems, the engraving on the wood. The glyphs stand upright because turning one turns its logic; the chevron marks the top. The ring runs clockwise from the top.</figcaption></figure>
+<div class="view3d ringview" id="logicView">
+<canvas class="flat" role="img" aria-label="the chosen Logic Alphabet ring from above"></canvas><canvas class="three" hidden aria-label="the chosen Logic Alphabet ring in 3D"></canvas>
+<div class="bar"><button type="button" data-mode="top">Top down</button><button type="button" data-mode="wood">Plywood</button><button type="button" data-mode="finger">On a finger</button><button type="button" class="spin">Pause</button></div>
+<p class="hint" style="margin:4px 0 0">Top down is the cut file. Plywood is the same ring cut from 3&nbsp;mm ply with the marks engraved. On a finger is the same sequence engraved round a 7&nbsp;mm silver band, tops toward the fingertip. In the 3D views, drag to turn and scroll to zoom.</p>
+</div>
 
 <h3>Reading the table</h3>
-<p>Each row is one glyph, in order round the ring. <em>Rows</em> gives its four places as 1 (stem) or 0 (no stem) in the order TT TF FT FF, and <em>means</em> says when the function is true. <em>To get the next glyph</em> names the one stem that changes on the way to the next row: which place, which values of A and B that place stands for, and whether the stem is added or removed. Every step changes exactly one stem, which is what makes the ring a Gray code. <em>Across the ring</em> is the glyph eight steps on, and it is always the negation of this one.</p>
+<p>Each row is one glyph, in order round the ring. <em>Rows</em> gives its four places as 1 (filled) or 0 (empty) in the order TT TF FT FF, and <em>means</em> says when the function is true. <em>To get the next glyph</em> names the one square that changes on the way to the next row: which place, which values of A and B that place stands for, and whether it is filled or emptied. Every step changes exactly one square, which is what makes the ring a Gray code. <em>Across the ring</em> is the glyph eight steps on, and it is always the negation of this one.</p>
 <div class="table-wrap"><table>
 <thead><tr><th>#</th><th>glyph</th><th>rows</th><th>means</th><th>to get the next glyph</th><th>across the ring</th></tr></thead>
 <tbody id="logicBody"></tbody></table></div>
-
-<h3>The ring as a piece of wood</h3>
-<p>The cut ring in 3D, 3&nbsp;mm ply with the glyphs engraved on top. It follows the ring chosen above, or switch to the grid-script ring.</p>
-<div class="view3d">
-<canvas id="ring3d" aria-label="the cut ring in 3D"></canvas>
-<div class="bar"><button type="button" id="ringShowLogic" aria-pressed="true">Logic ring</button><button type="button" id="ringShowGrid" aria-pressed="false">Grid ring</button><button type="button" id="ringSpin">Pause</button></div>
-<p class="hint" style="margin:4px 0 0">Drag to turn it, scroll to zoom.</p>
-</div>
 
 <h3>The same ring on the four-dimensional cube</h3>
 <p>Give each row of the truth table its own axis, TT, TF, FT and FF. The sixteen glyphs are then the corners of a four-dimensional cube, and each step of the ring runs along one edge. Below, the cube is turned in four dimensions and drawn in perspective, the way a cube's shadow is drawn on paper. Grey lines are the cube's 32 edges, and the 16 yellow ones are the chosen ring. The two markers travel the ring half a turn apart. The line between them always passes through the centre, because each glyph lies opposite its negation.</p>
 <div class="view3d">
 <canvas id="cube4" aria-label="the Logic Alphabet ring drawn on a turning four-dimensional cube"></canvas>
-<div class="bar"><button type="button" id="cubeSpin">Pause</button><span class="read" id="cubeRead" aria-live="polite"></span></div>
-<p class="hint" style="margin:4px 0 0">Drag to turn it in three dimensions, scroll to zoom. On its own it keeps turning in the fourth dimension too.</p>
+<div class="bar"><button type="button" id="cubeProj">Show the shadow</button><button type="button" id="cubeSpin">Pause</button><span class="read" id="cubeRead" aria-live="polite"></span></div>
+<p class="hint" style="margin:4px 0 0">Drag to turn it in three dimensions, scroll to zoom. On its own it keeps turning in the fourth dimension too. <em>Show the shadow</em> swaps the perspective for the cube's plain shadow, with the light falling straight through it. The outline of that shadow is always a solid with 12 four-sided faces. When the light falls along the cube's long diagonal it is exactly the rhombic dodecahedron, and two corners land at the centre. In either view the line between the markers passes through the centre.</p>
 </div>
 
 <h2 id="grid">The grid script as a ring</h2>
 <p>A grid-script letter is two steps among the eight grid directions, traced either way round. The tightest Gray code would change one step by an eighth of a turn each time. That is impossible, and the reason is parity. Call the turn between a letter's two steps its bend. Turning one step by an eighth changes the bend by one, so such a move always goes between an even-bend letter and an odd-bend letter. There are 12 even-bend letters ({{EVEN}}) and 16 odd-bend ones ({{ODD}}). A cycle that alternates between the two kinds needs the same number of each, so no cycle uses eighth-turns alone.</p>
 <p><strong>Why the kinds are not half and half.</strong> Count the tracings. The first step can go in any of 8 directions, and the second step can turn by 0, 1, 2, 3 or 4 eighths, the last four either way. That gives 8 possible turns: 4 even (straight on, a quarter turn left or right, and doubling straight back) and 4 odd (an eighth or three eighths, left or right). That would be half and half. But the script forbids doubling back, because the two steps would draw over each other, and doubling back is an even turn. That leaves 3 even turns and 4 odd ones for each first step: 8 × 3 = 24 even tracings and 8 × 4 = 32 odd ones. Each letter can be traced from either end, so halve both: 12 even-bend letters and 16 odd-bend ones. Every possible letter is in the alphabet; the one missing turn is what tips the balance.</p>
 <p>The ring therefore allows any change to one step and counts the turning. A cycle through all 28 can alternate kinds at most 24 times, and each of the 4 remaining moves stays within one kind and costs at least a quarter turn. That makes 24 + 4 × 2 = 32 eighths at the least, and the ring below reaches it. The stroke drawn in yellow is the one that turned on the way in from the letter before. The dot marks where the pen starts.</p>
+<div class="morphbox">
+<svg id="morph" viewBox="-70 -70 140 140" role="img" aria-label="the grid ring animated, one stroke turning at a time">
+<line class="fixed"/><line class="moving"/><circle class="dot" r="6"/></svg>
+<div><div id="morphName" class="mname"></div><div id="morphInfo" class="read" aria-live="polite"></div>
+<div class="bar"><button type="button" id="morphPlay">Pause</button><button type="button" id="morphNext">Next letter</button></div>
+<p class="hint">The ring played as one moving letter. At each step one stroke, in yellow, swings about the middle point while the other stays where it is, and the result is the next letter. After the 28th letter it comes back to G. The dot marks where the pen starts each letter, as in the chart.</p></div>
+</div>
 <div class="glets">{{GRID_LIST}}</div>
-<figure class="solo">{{GRID_RING}}<figcaption>The grid ring, starting from G at the top and running clockwise. Letters stand upright, because the script reads them by direction. Of its 28 changes, 24 are eighth-turns and 4 are quarter-turns.</figcaption></figure>
+<div class="decoder" id="gridPick">
+<button type="button" id="gridPrev" aria-label="previous ring">◀</button>
+<label>Ring <select id="gridSel" aria-label="which least-turning ring"></select> of {{GRID_N}} shown</label>
+<button type="button" id="gridNext" aria-label="next ring">▶</button>
+<span class="hint" id="gridNote"></span>
+</div>
+<p class="hint">There is more than one way to reach 32. These are {{GRID_N}} different least-turning rings, each starting from G; ring 1 is the one on the cut file and in the list and animation above. {{GRID_COUNT}}</p>
+<div class="view3d ringview" id="gridView">
+<canvas class="flat" role="img" aria-label="the chosen grid-script ring from above"></canvas><canvas class="three" hidden aria-label="the chosen grid-script ring in 3D"></canvas>
+<div class="bar"><button type="button" data-mode="top">Top down</button><button type="button" data-mode="wood">Plywood</button><button type="button" data-mode="finger">On a finger</button><button type="button" class="spin">Pause</button></div>
+<p class="hint" style="margin:4px 0 0">Top down is the cut file. Plywood is the same ring cut from 3&nbsp;mm ply with the marks engraved. On a finger is the same sequence engraved round a 7&nbsp;mm silver band, tops toward the fingertip. In the 3D views, drag to turn and scroll to zoom.</p>
+</div>
 
 <h2 id="cutting">Cutting</h2>
 <p>The six cut files are in <a href="https://github.com/Gernreich/gray-and-de-bruijn/tree/main/cut-files"><code>cut-files/</code></a>, each one fitting the 600 × 305&nbsp;mm bed of the xTool P2S. They use the staircase ruler's layer colours: green #008000 to engrave (filled), blue #0000ff to score, orange #ff8000 for inner cuts (cut first), black #000000 for outlines. Outlines sit half a kerf outside the finished edge, so the ruler's zero is the cut face. <code>python3 walks.py --kerf=0.18</code> rewrites the files for another kerf (the default is 0.13).</p>
@@ -261,10 +288,23 @@ const setRuler = decoder('rdec', TRACK, 9, false, p => 'the window starts at ' +
   setRuler(Math.max(0, Math.min(300, svg === zoom ? Math.round(x - 4.5) : Math.floor(x))));
 }));
 setRuler(137);
-const setDisc = decoder('ddec', DISC, 5, true, p => 'sector ' + p + ', ' + (p * 11.25) + '° clockwise from the top');
+const dbDisc = document.querySelector('svg[aria-label="the de Bruijn disc"]');
+const dwin = document.createElementNS(NS, 'path'); dwin.setAttribute('class', 'win'); dbDisc.appendChild(dwin);
+function arcWedge(r0, r1, t0, t1) {
+  const P = (r, t) => [r * Math.sin(2 * Math.PI * t), -r * Math.cos(2 * Math.PI * t)];
+  const [a, b, c, d] = [P(r1, t0), P(r1, t1), P(r0, t1), P(r0, t0)], big = t1 - t0 > 0.5 ? 1 : 0;
+  return `M${a} A${r1},${r1} 0 ${big} 1 ${b} L${c} A${r0},${r0} 0 ${big} 0 ${d} Z`;
+}
+const setDisc = decoder('ddec', DISC, 5, true, p => 'sector ' + p + ', ' + (p * 11.25) + '° clockwise from the top',
+  p => dwin.setAttribute('d', arcWedge(29.4, 42.6, p / 32, (p + 5) / 32)));
 setDisc(9);
+document.getElementById('hideB').addEventListener('click', e => {
+  const b = e.currentTarget, on = b.getAttribute('aria-pressed') !== 'true';
+  b.setAttribute('aria-pressed', on); b.textContent = on ? 'Show the B layers' : 'Hide the B layers';
+  document.querySelector('.withB').hidden = on; document.querySelector('.noB').hidden = !on;
+});
 
-const LOGIC = {{LOGIC_JSON}}, STACK = {{STACK_JSON}}, LOGIC_MEANING = {{MEANING_JSON}}, GRID = {{GRID_JSON}};
+const LOGIC = {{LOGIC_JSON}}, STACK = {{STACK_JSON}}, LOGIC_MEANING = {{MEANING_JSON}}, GRID = {{GRID_JSON}}, GRIDS = {{GRIDS_JSON}}, GRID_LETTERS = {{LETTERS_JSON}};
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // a canvas with a scene, a group turned by dragging, and zoom on the wheel
@@ -275,13 +315,13 @@ function stage(canvas, camZ) {
   scene.add(group); cam.position.set(0, 0, camZ);
   scene.add(new THREE.AmbientLight(0xffffff, 0.55));
   const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(3, 5, 8); scene.add(sun);
-  const st = { renderer, scene, cam, group, yaw: 0.5, pitch: 0.35, zoom: 1, held: false, spin: !reduced };
+  const st = { renderer, scene, cam, group, camZ, yaw: 0.5, pitch: 0.35, zoom: 1, held: false, spin: !reduced };
   function size() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
     scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#f3f2ee');
   }
-  size(); addEventListener('resize', size);
+  st.resize = size; size(); addEventListener('resize', size);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', size);
   let px = 0, py = 0;
   canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); st.held = true; px = e.clientX; py = e.clientY; });
@@ -295,7 +335,7 @@ function stage(canvas, camZ) {
   canvas.addEventListener('wheel', e => { e.preventDefault(); st.zoom = Math.max(0.4, Math.min(3, st.zoom * Math.exp(e.deltaY * 0.001))); }, { passive: false });
   st.draw = () => {
     group.rotation.set(st.pitch, st.yaw, 0);
-    cam.position.z = camZ * st.zoom;
+    cam.position.z = st.camZ * st.zoom;
     renderer.render(scene, cam);
   };
   return st;
@@ -353,25 +393,12 @@ function cellsOf(cx, cy, bits, cell, gap) {
     x: cx - cell - gap / 2 + (j % 2) * (cell + gap), y: cy - cell - gap / 2 + Math.floor(j / 2) * (cell + gap) }));
 }
 function ringPos(i, n, r) { const a = 2 * Math.PI * i / n; return [r * Math.sin(a), -r * Math.cos(a)]; }
-function drawFlatRing(ring) {
-  const svg = document.getElementById('logicRing');
-  let s = '<path class="stock" fill-rule="evenodd" d="M-62,0 A62,62 0 1 0 62,0 A62,62 0 1 0 -62,0 Z M-40,0 A40,40 0 1 0 40,0 A40,40 0 1 0 -40,0 Z"/>';
-  ring.forEach((t, i) => {
-    const [cx, cy] = ringPos(i, 16, 51);
-    cellsOf(cx, cy, t, 5, 1).forEach(c => {
-      if (c.on) s += `<rect class="eng" x="${c.x + 0.4}" y="${c.y + 0.4}" width="4.2" height="4.2"/>`;
-      s += `<rect class="sco" x="${c.x}" y="${c.y}" width="5" height="5"/>`;
-    });
-  });
-  s += '<path class="sco" d="M-2,-43.5 L0,-46 L2,-43.5"/>';
-  svg.innerHTML = s;
-}
 function fillTable(ring) {
   const body = document.getElementById('logicBody');
   body.innerHTML = ring.map((t, i) => {
     const nxt = ring[(i + 1) % 16], j = [0, 1, 2, 3].find(k => t[k] !== nxt[k]);
     const sq = [...t].map(b => `<i class="${b === '1' ? 'on' : ''}"></i>`).join('');
-    const act = (nxt[j] === '1' ? 'add' : 'remove') + ' the ' + ROWS[j] + ' stem (' + ROWNAME[ROWS[j]] + ')';
+    const act = (nxt[j] === '1' ? 'fill' : 'empty') + ' the ' + ROWS[j] + ' square (' + ROWNAME[ROWS[j]] + ')';
     return `<tr><td class="num">${i}</td><td><span class="sq">${sq}</span></td><td><code>${t}</code></td>` +
       `<td>${LOGIC_MEANING[t]}</td><td>${act}</td><td>${LOGIC_MEANING[ring[(i + 8) % 16]]}</td></tr>`;
   }).join('');
@@ -381,7 +408,7 @@ function setRing(k) {
   const ring = LOGIC[ringNo];
   document.getElementById('ringSel').value = ringNo;
   document.getElementById('ringNote').textContent = ringNo === 0 ? 'the ring on the cut file' : '';
-  drawFlatRing(ring); fillTable(ring);
+  fillTable(ring);
   ringListeners.forEach(f => f(ring));
 }
 (function () {
@@ -390,75 +417,6 @@ function setRing(k) {
   sel.addEventListener('change', () => setRing(+sel.value));
   document.getElementById('ringPrev').addEventListener('click', () => setRing(ringNo - 1));
   document.getElementById('ringNext').addEventListener('click', () => setRing(ringNo + 1));
-})();
-
-// the ring as a piece of wood ---------------------------------------------
-(function () {
-  const st = stage(document.getElementById('ring3d'), 235);
-  st.pitch = 0.75;
-  const R = 68, N = 1024, canvas = document.createElement('canvas');
-  canvas.width = canvas.height = N;
-  const g = canvas.getContext('2d'), tex = new THREE.CanvasTexture(canvas);
-  tex.repeat.set(1 / (2 * R), 1 / (2 * R)); tex.offset.set(0.5, 0.5);
-  const wood = new THREE.MeshLambertMaterial({ color: 0xd9c49c });
-  const top = new THREE.MeshLambertMaterial({ map: tex });
-  let mesh = null, kind = 'logic';
-  function build(outer, inner) {
-    if (mesh) { st.group.remove(mesh); mesh.geometry.dispose(); }
-    const shape = new THREE.Shape(); shape.absarc(0, 0, outer, 0, Math.PI * 2, false);
-    const hole = new THREE.Path(); hole.absarc(0, 0, inner, 0, Math.PI * 2, true); shape.holes.push(hole);
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: 3, bevelEnabled: false, curveSegments: 96 });
-    geo.translate(0, 0, -1.5);
-    mesh = new THREE.Mesh(geo, [top, wood]);
-    mesh.rotation.x = -Math.PI / 2;            // lie flat, the top face up
-    st.group.add(mesh);
-  }
-  // drawing coordinates: mm, y down, as in the cut file; shape y is up, so flip
-  const px = v => (v + R) / (2 * R) * N;
-  function paper() { g.fillStyle = '#e6d3ad'; g.fillRect(0, 0, N, N); g.fillStyle = g.strokeStyle = '#2b2116'; g.lineCap = g.lineJoin = 'round'; }
-  function chevron(r) { g.lineWidth = 2; g.beginPath(); g.moveTo(px(-2), px(-r - 3.5)); g.lineTo(px(0), px(-r - 6)); g.lineTo(px(2), px(-r - 3.5)); g.stroke(); }
-  function drawLogic(ring) {
-    paper(); const k = N / (2 * R);
-    ring.forEach((t, i) => {
-      const [cx, cy] = ringPos(i, 16, 51);
-      cellsOf(cx, cy, t, 5, 1).forEach(c => {
-        g.lineWidth = 1.5; g.strokeRect(px(c.x), px(c.y), 5 * k, 5 * k);
-        if (c.on) g.fillRect(px(c.x + 0.4), px(c.y + 0.4), 4.2 * k, 4.2 * k);
-      });
-    });
-    chevron(40); tex.needsUpdate = true;
-  }
-  const STEP = { E: [1, 0], W: [-1, 0], N: [0, -1], S: [0, 1], NE: [1, -1], NW: [-1, -1], SE: [1, 1], SW: [-1, 1] };
-  function drawGrid() {
-    paper();
-    GRID.forEach(([name, trace], i) => {
-      const [cx, cy] = ringPos(i, 28, 56), s = 2.6;
-      const pts = [[0, 0]]; trace.forEach(d => { const p = pts[pts.length - 1]; pts.push([p[0] + s * STEP[d][0], p[1] + s * STEP[d][1]]); });
-      const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-      const ox = cx - (Math.min(...xs) + Math.max(...xs)) / 2, oy = cy - (Math.min(...ys) + Math.max(...ys)) / 2;
-      g.lineWidth = 5; g.beginPath(); pts.forEach((p, j) => (j ? g.lineTo : g.moveTo).call(g, px(p[0] + ox), px(p[1] + oy))); g.stroke();
-      g.beginPath(); g.arc(px(pts[0][0] + ox), px(pts[0][1] + oy), 0.6 * N / (2 * R) + 2, 0, 2 * Math.PI); g.fill();
-    });
-    chevron(44); tex.needsUpdate = true;
-  }
-  // canvas y runs down and texture v runs up: flip the texture to match the shape's y-up
-  function show(which) {
-    kind = which;
-    document.getElementById('ringShowLogic').setAttribute('aria-pressed', which === 'logic');
-    document.getElementById('ringShowGrid').setAttribute('aria-pressed', which === 'grid');
-    if (which === 'logic') { build(62, 40); drawLogic(LOGIC[ringNo]); } else { build(68, 44); drawGrid(); }
-  }
-  ringListeners.push(ring => { if (kind === 'logic') drawLogic(ring); });
-  document.getElementById('ringShowLogic').addEventListener('click', () => show('logic'));
-  document.getElementById('ringShowGrid').addEventListener('click', () => show('grid'));
-  pauseButton(document.getElementById('ringSpin'), st);
-  show('logic');
-  let last = performance.now();
-  (function frame(t) {
-    const dt = Math.max(0, (t - last) / 1000); last = t;
-    if (st.spin && !st.held) st.yaw += dt * 0.3;
-    st.draw(); requestAnimationFrame(frame);
-  })(last);
 })();
 
 // the Logic ring on the 4-cube ----------------------------------------------
@@ -505,6 +463,10 @@ function setRing(k) {
   const chord = rod(0.025, new THREE.MeshLambertMaterial({ color: 0x52514e }));
   const read = document.getElementById('cubeRead');
   pauseButton(document.getElementById('cubeSpin'), st);
+  let shadow = false;
+  document.getElementById('cubeProj').addEventListener('click', e => {
+    shadow = !shadow; e.currentTarget.textContent = shadow ? 'Show in perspective' : 'Show the shadow';
+  });
   let a4 = 0.6, t = 0, shown = '';
   const P = verts.map(() => new THREE.Vector3());
   function project() {
@@ -513,7 +475,7 @@ function setRing(k) {
       let [x, y, z, w] = v;
       [x, w] = [x * ca - w * sa, x * sa + w * ca];       // turn in the x-w plane
       [z, w] = [z * cb - w * sb, z * sb + w * cb];       // and in the z-w plane
-      const k = 3.2 / (3.2 - w);
+      const k = shadow ? 1.25 : 3.2 / (3.2 - w);
       P[i].set(x * k * 1.6, y * k * 1.6, z * k * 1.6);
     });
   }
@@ -537,7 +499,200 @@ function setRing(k) {
     st.draw(); requestAnimationFrame(frame);
   })(last);
 })();
+// one window per ring: top down, plywood, on a finger ----------------------
+const RSTEP = { E: [1, 0], W: [-1, 0], N: [0, -1], S: [0, 1], NE: [1, -1], NW: [-1, -1], SE: [1, 1], SW: [-1, 1] };
+const INK = '#2b2116';
+function paintLogicItem(g, cx, cy, bits, cell, lw) {          // a 2 x 2 glyph centred on (cx, cy), in mm
+  const gap = cell / 5;
+  [...bits].forEach((b, j) => {
+    const x = cx - cell - gap / 2 + (j % 2) * (cell + gap), y = cy - cell - gap / 2 + Math.floor(j / 2) * (cell + gap);
+    g.lineWidth = lw; g.strokeRect(x, y, cell, cell);
+    if (b === '1') g.fillRect(x + cell * 0.08, y + cell * 0.08, cell * 0.84, cell * 0.84);
+  });
+}
+function paintGridItem(g, cx, cy, trace, s, lw) {             // a grid letter, its box centred on (cx, cy)
+  const pts = [[0, 0]];
+  trace.forEach(d => { const p = pts[pts.length - 1]; pts.push([p[0] + s * RSTEP[d][0], p[1] + s * RSTEP[d][1]]); });
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const ox = cx - (Math.min(...xs) + Math.max(...xs)) / 2, oy = cy - (Math.min(...ys) + Math.max(...ys)) / 2;
+  g.lineWidth = lw; g.beginPath(); pts.forEach((p, j) => j ? g.lineTo(p[0] + ox, p[1] + oy) : g.moveTo(p[0] + ox, p[1] + oy)); g.stroke();
+  g.beginPath(); g.arc(pts[0][0] + ox, pts[0][1] + oy, lw * 1.2, 0, 2 * Math.PI); g.fill();
+}
+const RINGS = {
+  logic: { R: 62, r: 40, c: 51, item: (g, x, y, d) => paintLogicItem(g, x, y, d, 5, 0.3),
+           strip: (g, x, y, d, w) => paintLogicItem(g, x, y, d, Math.min(1.6, w * 0.4), 0.12) },
+  grid: { R: 68, r: 44, c: 56, item: (g, x, y, d) => paintGridItem(g, x, y, d[1], 2.6, 0.45),
+          strip: (g, x, y, d, w) => paintGridItem(g, x, y, d[1], Math.min(1.1, w * 0.36), 0.16) },
+};
+function paintTop(g, spec, data, wood, hole) {               // the ring from above, mm units, y down
+  const n = data.length;
+  g.save();
+  g.beginPath(); g.arc(0, 0, spec.R, 0, 2 * Math.PI); g.moveTo(spec.r, 0); g.arc(0, 0, spec.r, 0, 2 * Math.PI, true);
+  g.fillStyle = wood; g.fill('evenodd');
+  if (hole) { g.strokeStyle = '#8a7350'; g.lineWidth = 0.4; g.stroke(); }
+  g.fillStyle = g.strokeStyle = INK; g.lineCap = g.lineJoin = 'round';
+  data.forEach((d, i) => { const [x, y] = ringPos(i, n, spec.c); spec.item(g, x, y, d); });
+  g.lineWidth = 0.4; g.beginPath(); g.moveTo(-2, -spec.r - 3.5); g.lineTo(0, -spec.r - 6); g.lineTo(2, -spec.r - 3.5); g.stroke();
+  g.restore();
+}
+function ringViewer(id, kind) {
+  const root = document.getElementById(id), spec = RINGS[kind];
+  const flat = root.querySelector('canvas.flat'), c3 = root.querySelector('canvas.three');
+  const st = stage(c3, 240), g2 = flat.getContext('2d');
+  const btns = { top: root.querySelector('[data-mode="top"]'), wood: root.querySelector('[data-mode="wood"]'), finger: root.querySelector('[data-mode="finger"]') };
+  let mode = 'top', data = null;
+  // plywood: the cut ring, 3 mm thick, its top a canvas texture in the cut file's mm
+  const N = 1024, tc = document.createElement('canvas'); tc.width = tc.height = N;
+  const tg = tc.getContext('2d'), tex = new THREE.CanvasTexture(tc);
+  tex.repeat.set(1 / (2 * spec.R), 1 / (2 * spec.R)); tex.offset.set(0.5, 0.5);
+  const shape = new THREE.Shape(); shape.absarc(0, 0, spec.R, 0, Math.PI * 2, false);
+  const hole = new THREE.Path(); hole.absarc(0, 0, spec.r, 0, Math.PI * 2, true); shape.holes.push(hole);
+  const pgeo = new THREE.ExtrudeGeometry(shape, { depth: 3, bevelEnabled: false, curveSegments: 96 }); pgeo.translate(0, 0, -1.5);
+  const ply = new THREE.Mesh(pgeo, [new THREE.MeshLambertMaterial({ map: tex, color: 0xcfc2a6 }), new THREE.MeshLambertMaterial({ color: 0xa88f63 })]);
+  ply.rotation.x = -Math.PI / 2;
+  // finger ring: a silver band, the glyphs engraved round its outside, on a finger
+  const BR = 10.5, BI = 9.2, BW = 7, SW = 2048, SH = Math.round(SW * BW / (2 * Math.PI * BR));
+  const sc = document.createElement('canvas'); sc.width = SW; sc.height = SH;
+  const sg = sc.getContext('2d'), stex = new THREE.CanvasTexture(sc);
+  const metal = new THREE.MeshStandardMaterial({ color: 0xd4d6da, metalness: 0.75, roughness: 0.3 });
+  const band = new THREE.Group();
+  band.add(new THREE.Mesh(new THREE.CylinderGeometry(BR, BR, BW, 160, 1, true), new THREE.MeshStandardMaterial({ map: stex, metalness: 0.6, roughness: 0.35 })));
+  band.add(new THREE.Mesh(new THREE.CylinderGeometry(BI, BI, BW, 160, 1, true), Object.assign(metal.clone(), { side: THREE.BackSide })));
+  [-1, 1].forEach(s => { const m = new THREE.Mesh(new THREE.RingGeometry(BI, BR, 160), metal); m.rotation.x = s * Math.PI / 2; m.position.y = s * BW / 2; band.add(m); });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xe0ac8a, roughness: 0.8, metalness: 0 });
+  const finger = new THREE.Group();
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(8.6, 9.1, 40, 48), skin); shaft.position.y = -8; finger.add(shaft);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(8.6, 48, 24), skin); tip.position.y = 12; tip.scale.y = 1.2; finger.add(tip);
+  const wear = new THREE.Group(); wear.add(finger, band, new THREE.HemisphereLight(0xffffff, 0x444444, 0.5)); band.position.y = -4;
+  function paint() {
+    if (!data) return;
+    // top-down canvas
+    const w = flat.clientWidth, dpr = Math.min(devicePixelRatio, 2);
+    flat.width = flat.height = Math.round(w * dpr);
+    const k = flat.width / (2 * spec.R + 2);
+    g2.setTransform(k, 0, 0, k, flat.width / 2, flat.height / 2); g2.clearRect(-spec.R - 1, -spec.R - 1, 2 * spec.R + 2, 2 * spec.R + 2);
+    paintTop(g2, spec, data, '#e6d3ad', true);
+    // plywood texture
+    tg.setTransform(N / (2 * spec.R), 0, 0, N / (2 * spec.R), N / 2, N / 2);
+    tg.fillStyle = '#e6d3ad'; tg.fillRect(-spec.R, -spec.R, 2 * spec.R, 2 * spec.R);
+    paintTop(tg, spec, data, '#e6d3ad', false); tex.needsUpdate = true;
+    // band texture: mm across the band's outside, glyph tops toward the fingertip
+    const mm = SW / (2 * Math.PI * BR), cw = 2 * Math.PI * BR / data.length;
+    sg.setTransform(mm, 0, 0, mm, 0, 0); sg.fillStyle = '#d4d6da'; sg.fillRect(0, 0, 2 * Math.PI * BR, BW);
+    sg.fillStyle = sg.strokeStyle = '#30343a'; sg.lineCap = sg.lineJoin = 'round';
+    data.forEach((d, i) => spec.strip(sg, (i + 0.5) * cw, BW / 2, d, cw));
+    stex.needsUpdate = true;
+  }
+  function setMode(m) {
+    mode = m;
+    Object.entries(btns).forEach(([k, b]) => b.setAttribute('aria-pressed', k === m));
+    flat.hidden = m !== 'top'; c3.hidden = m === 'top';
+    st.group.remove(ply, wear);
+    if (m === 'wood') { st.group.add(ply); st.camZ = 240 * spec.R / 62; st.pitch = 0.75; }
+    if (m === 'finger') { st.group.add(wear); st.camZ = 75; st.pitch = 0.2; }
+    st.resize(); paint();
+  }
+  Object.entries(btns).forEach(([k, b]) => b.addEventListener('click', () => setMode(k)));
+  pauseButton(root.querySelector('.spin'), st);
+  addEventListener('resize', paint);
+  let last = performance.now();
+  (function frame(t) {
+    const dt = Math.max(0, (t - last) / 1000); last = t;
+    if (mode !== 'top') { if (st.spin && !st.held) st.yaw += dt * 0.3; st.draw(); }
+    requestAnimationFrame(frame);
+  })(last);
+  setMode('top');
+  return d => { data = d; paint(); };
+}
+const showLogicRing = ringViewer('logicView', 'logic');
+ringListeners.push(showLogicRing);
+
+const showGridRing = ringViewer('gridView', 'grid');
+(function () {
+  const sel = document.getElementById('gridSel');
+  let k = 0;
+  GRIDS.forEach((_, i) => { const o = document.createElement('option'); o.value = i; o.textContent = i + 1; sel.appendChild(o); });
+  function set(i) {
+    k = (i + GRIDS.length) % GRIDS.length; sel.value = k;
+    document.getElementById('gridNote').textContent = k === 0 ? 'the ring on the cut file' : '';
+    showGridRing(GRIDS[k].map(n => [n, GRID_LETTERS[n]]));
+  }
+  sel.addEventListener('change', () => set(+sel.value));
+  document.getElementById('gridPrev').addEventListener('click', () => set(k - 1));
+  document.getElementById('gridNext').addEventListener('click', () => set(k + 1));
+  set(0);
+})();
 setRing(0);
+// the grid ring as an animation: each letter turns one stroke into the next
+(function () {
+  const DIRS = ['E', 'NE', 'N', 'NW', 'W', 'SW', 'S', 'SE'];
+  const V = { E: [1, 0], W: [-1, 0], N: [0, -1], S: [0, 1], NE: [1, -1], NW: [-1, -1], SE: [1, 1], SW: [-1, 1] };
+  const opp = d => DIRS[(DIRS.indexOf(d) + 4) % 8];
+  const eighths = (a, b) => { const t = ((DIRS.indexOf(b) - DIRS.indexOf(a)) % 8 + 8) % 8; return Math.min(t, 8 - t); };
+  const tracings = ([a, b]) => [[a, b], [opp(b), opp(a)]];
+  function change(p, q) {                      // the tracings and slot that turn letter p into q with least turning
+    let best = null;
+    for (const t of tracings(p)) for (const u of tracings(q)) for (const s of [0, 1])
+      if (t[1 - s] === u[1 - s]) { const e = eighths(t[s], u[s]); if (!best || e < best.e) best = { t, u, s, e }; }
+    return best;
+  }
+  const S = 40, svg = document.getElementById('morph'), fixedL = svg.querySelector('.fixed'), moveL = svg.querySelector('.moving'),
+    dot = svg.querySelector('.dot'), nameT = document.getElementById('morphName'), info = document.getElementById('morphInfo'),
+    playB = document.getElementById('morphPlay');
+  let i = 0, pts, anim = null, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, wait = 0, view = [0, 0];
+  function pointsOf(t, start) { const p1 = [start[0] + S * V[t[0]][0], start[1] + S * V[t[0]][1]]; return [start, p1, [p1[0] + S * V[t[1]][0], p1[1] + S * V[t[1]][1]]]; }
+  const same = (a, b) => Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
+  // the current three points, ordered as tracing t
+  function ordered(t) { const r = pointsOf(t, pts[0]); return same(r[2], pts[2]) ? pts : [pts[2], pts[1], pts[0]]; }
+  function centre(p) { const xs = p.map(q => q[0]), ys = p.map(q => q[1]); return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2]; }
+  function draw(p, slot) {
+    const seg = (l, a, b) => { l.setAttribute('x1', a[0]); l.setAttribute('y1', a[1]); l.setAttribute('x2', b[0]); l.setAttribute('y2', b[1]); };
+    if (slot === 0) { seg(moveL, p[0], p[1]); seg(fixedL, p[1], p[2]); } else { seg(fixedL, p[0], p[1]); seg(moveL, p[1], p[2]); }
+    svg.setAttribute('viewBox', (view[0] - 70) + ' ' + (view[1] - 70) + ' 140 140');
+  }
+  function settle() {                          // dot at the start of the letter as the chart traces it
+    const [name, t] = GRID[i], p = ordered(t);
+    pts = p; dot.setAttribute('cx', p[0][0]); dot.setAttribute('cy', p[0][1]); dot.style.opacity = 1;
+    nameT.textContent = name;
+    info.textContent = 'Letter ' + (i + 1) + ' of 28';
+  }
+  function start() {
+    const j = (i + 1) % 28, c = change(GRID[i][1], GRID[j][1]), p = ordered(c.t);
+    const piv = p[1], end = c.s === 0 ? p[0] : p[2];
+    const v0 = [end[0] - piv[0], end[1] - piv[1]];
+    const d1 = c.s === 0 ? opp(c.u[0]) : c.u[1], v1 = [S * V[d1][0], S * V[d1][1]];
+    let a0 = Math.atan2(v0[1], v0[0]), a1 = Math.atan2(v1[1], v1[0]);
+    if (a1 - a0 > Math.PI) a1 -= 2 * Math.PI; if (a0 - a1 > Math.PI) a1 += 2 * Math.PI;
+    const r0 = Math.hypot(...v0), r1 = Math.hypot(...v1);
+    const after = c.s === 0 ? [[piv[0] + v1[0], piv[1] + v1[1]], piv, p[2]] : [p[0], piv, [piv[0] + v1[0], piv[1] + v1[1]]];
+    anim = { p, piv, a0, a1, r0, r1, s: c.s, t: 0, j, after, c0: view.slice(), c1: centre(after) };
+    dot.style.opacity = 0;
+    info.textContent = GRID[i][0] + ' → ' + GRID[j][0] + ': turn one stroke ' + (c.e === 1 ? 'an eighth' : 'a quarter') + ' of a turn';
+  }
+  function frameAt(f) {
+    const e = f < 0.5 ? 2 * f * f : 1 - 2 * (1 - f) * (1 - f), a = anim.a0 + (anim.a1 - anim.a0) * e, r = anim.r0 + (anim.r1 - anim.r0) * e;
+    const m = [anim.piv[0] + r * Math.cos(a), anim.piv[1] + r * Math.sin(a)];
+    view = [anim.c0[0] + (anim.c1[0] - anim.c0[0]) * e, anim.c0[1] + (anim.c1[1] - anim.c0[1]) * e];
+    const p = anim.s === 0 ? [m, anim.piv, anim.p[2]] : [anim.p[0], anim.piv, m];
+    draw(p, anim.s);
+  }
+  function finish() { pts = anim.after; i = anim.j; view = anim.c1; draw(pts, anim.s); anim = null; settle(); wait = 0; }
+  function step() { if (anim) finish(); start(); }
+  pts = pointsOf(GRID[0][1], [0, 0]); view = centre(pts); draw(pts, 1); settle();
+  document.getElementById('morphNext').addEventListener('click', () => { step(); if (!playing) finish(); });
+  const label = () => { playB.textContent = playing ? 'Pause' : 'Play'; };
+  playB.addEventListener('click', () => { playing = !playing; label(); }); label();
+  let last = performance.now();
+  (function tick(now) {
+    const dt = Math.max(0, (now - last) / 1000); last = now;
+    if (playing) {
+      if (anim) { anim.t += dt / 1.1; if (anim.t >= 1) finish(); else frameAt(anim.t); }
+      else if ((wait += dt) > 0.9) start();
+    }
+    requestAnimationFrame(tick);
+  })(last);
+})();
+
 </script>
 </body>
 </html>

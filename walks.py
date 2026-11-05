@@ -27,6 +27,10 @@ import json, math, os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 GREEN, BLUE, ORANGE, BLACK = '#008000', '#0000ff', '#ff8000', '#000000'
 BED_W, BED_H = 600, 305
+# how many least-turning grid rings exist in all: the count is still running
+GRID_COUNT = ('In all there are 2,161,152 least-turning rings, counted by tools/count_grid_rings.rs, '
+              'a Rust search that took about 13 minutes.')
+GRID_RINGS_FILE = os.path.join(HERE, 'grid-rings.json')
 KERF = 0.13
 
 
@@ -248,6 +252,52 @@ def grid_ring():
     return found[0]
 
 
+def grid_rings():
+    """The sample of least-turning grid rings the page shows: read from
+    grid-rings.json (written by --resample, which takes a few minutes)."""
+    with open(GRID_RINGS_FILE) as fh:
+        return json.load(fh)
+
+
+def sample_grid_rings(count=48, seed=1):
+    """Several different least-turning rings from G: the first is
+    grid_ring(); the rest come from the same search with the neighbours
+    tried in a shuffled order (seeded, so the list is the same every run).
+    A ring and its reverse count as one."""
+    import random
+    nb, keys, bound = grid_moves(), list(LETTERS), grid_bound()
+    first = grid_ring()
+    out, seen = [first], {tuple(first), tuple([first[0]] + first[:0:-1])}
+    rnd = random.Random(seed)
+    tries = 0
+    while len(out) < count and tries < count * 20:
+        tries += 1
+        order = {k: sorted(nb[k].items(), key=lambda x: (x[1], rnd.random())) for k in keys}
+        found = []
+
+        def dfs(path, used, cost):
+            if found or cost + (len(keys) - len(path)) > bound:
+                return
+            v = path[-1]
+            if len(path) == len(keys):
+                if path[0] in nb[v] and cost + nb[v][path[0]] == bound:
+                    found.append(path[:])
+                return
+            for w, c in order[v]:
+                if w not in used:
+                    path.append(w)
+                    used.add(w)
+                    dfs(path, used, cost + c)
+                    used.discard(w)
+                    path.pop()
+        dfs(['G'], {'G'}, 0)
+        if found and tuple(found[0]) not in seen:
+            r = found[0]
+            seen |= {tuple(r), tuple([r[0]] + r[:0:-1])}
+            out.append(r)
+    return out
+
+
 def grid_change(k, o):
     """How letter k becomes o: the tracing of k, the tracing of o, the slot
     turned (0 or 1) and the turn in eighths."""
@@ -309,8 +359,13 @@ def check():
     ok(sorted(ring) == sorted(MEANING) and
        all(moved(ring[i], ring[(i + 1) % 16]) == 1 for i in range(16)) and
        all(int(ring[i], 2) ^ int(ring[i + 8], 2) == 15 for i in range(8)),
-       'the Logic ring: all 16, one stem per step, each across from its negation')
+       'the Logic ring: all 16, one square per step, each across from its negation')
     ok(len(SHAPE) == 56 and len(set(SHAPE.values())) == 28, '28 letters, 56 tracings')
+    grs = grid_rings()
+    ok(len(grs) == 48 and len({tuple(r) for r in grs}) == 48 and
+       all(sorted(r) == sorted(LETTERS) and r[0] == 'G' and
+           sum(nb_[r[i]][r[(i + 1) % 28]] for i in range(28)) == 32 for r in grs for nb_ in [grid_moves()]),
+       '48 different least-turning grid rings listed, each 32 eighths')
     even, odd = grid_sides()
     ok((len(even), len(odd)) == (12, 16), f'grid letters: {len(even)} of even bend, {len(odd)} of odd')
     nb = grid_moves()
@@ -619,6 +674,22 @@ def counting_html(n=4):
     return '\n'.join(rows)
 
 
+def counting_both(n=4):
+    """The counting stacks twice: as built, and with the B spacers left out."""
+    nob = []
+    for name, codes in (('Binary', list(range(16))), ('Gray', gray(4))):
+        st, mv = counting(n, codes)
+        cols = []
+        for i, s in enumerate(st):
+            hi = () if i == 0 else tuple(j // 2 for j in range(0, len(s), 2) if s[j] != st[i - 1][j])
+            cols.append(f'<div class="col">{stack_svg(s[0::2], hi, label=bitstr(codes[i], n))}'
+                        f'<code>{bitstr(codes[i], n)}</code>'
+                        f'<span class="mv">{"" if i == 0 else mv[i - 1]}</span></div>')
+        nob.append(f'<h3>{name}: {sum(mv)} layers moved</h3><div class="stacks">{"".join(cols)}</div>')
+    return ('<p><button type="button" id="hideB" class="tog" aria-pressed="false">Hide the B layers</button></p>'
+            f'<div class="withB">{counting_html(n)}</div><div class="noB" hidden>{"".join(nob)}</div>')
+
+
 def stack_db_html(n=3):
     s, bits = spacer_de_bruijn(n)
     cells = ''.join(f'<span class="L{" sp" if c == "B" else ""}" style="background:{COL[c]}">{c}</span>'
@@ -657,15 +728,15 @@ def page(kerf):
     track = ''.join(map(str, ruler_track(300)))
     disc = ''.join(map(str, de_bruijn(2, 5)))
     sdb, s3, bits3 = stack_db_html(3)
+    grids = grid_rings()
     even, odd = grid_sides()
     sub = {
         '{{RULER}}': ps['window-ruler-300'].preview('the window ruler'),
         '{{READER}}': ps['window-reader'].preview('the reader card'),
         '{{GRAY_DISC}}': ps['gray-disc'].preview('the Gray code disc'),
         '{{DB_DISC}}': ps['de-bruijn-disc'].preview('the de Bruijn disc'),
-        '{{GRID_RING}}': ps['grid-ring'].preview('the grid-script ring'),
         '{{TRACK}}': track, '{{DISC}}': disc,
-        '{{COUNTING}}': counting_html(),
+        '{{COUNTING}}': counting_both(),
         '{{STACK_DB}}': sdb,
         '{{STACK_BITS}}': bits3,
         '{{GRID_LIST}}': grid_list(),
@@ -674,6 +745,10 @@ def page(kerf):
         '{{GRID_JSON}}': json.dumps([[k, list(LETTERS[k])] for k in grid_ring()]),
         '{{STACK_JSON}}': json.dumps(s3),
         '{{MEANING_JSON}}': json.dumps(MEANING),
+        '{{GRIDS_JSON}}': json.dumps(grids),
+        '{{LETTERS_JSON}}': json.dumps({k: list(v) for k, v in LETTERS.items()}, ensure_ascii=False),
+        '{{GRID_N}}': str(len(grids)),
+        '{{GRID_COUNT}}': GRID_COUNT,
     }
     html = open(os.path.join(HERE, 'page.html')).read()
     for a, b in sub.items():
@@ -692,8 +767,20 @@ def main(argv):
             kerf = float(a.split('=')[1])
         elif a == '--check':
             write = False
+        elif a == '--resample':
+            with open(GRID_RINGS_FILE, 'w') as fh:
+                json.dump(sample_grid_rings(), fh, ensure_ascii=False, indent=0)
+            print('wrote grid-rings.json')
+        elif a == '--graph':
+            # the least-turning search's graph, for tools/count_grid_rings.rs
+            nb, keys = grid_moves(), list(LETTERS)
+            ix = {k: i for i, k in enumerate(keys)}
+            print(len(keys), ix['G'])
+            for k in keys:
+                print(' '.join(f'{ix[o]}:{c}' for o, c in sorted(nb[k].items()) if c <= 2))
+            return
         else:
-            sys.exit(f'unknown {a}; takes --kerf=MM, --check')
+            sys.exit(f'unknown {a}; takes --kerf=MM, --check, --resample, --graph')
     if not check():
         sys.exit('checks failed')
     for p in pieces(kerf):
