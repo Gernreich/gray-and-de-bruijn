@@ -22,7 +22,7 @@ Cut files (P2S layers as in the staircase ruler):
     orange #ff8000  cut, inner (first)
     black  #000000  cut, outline
 """
-import json, math, os, sys
+import json, math, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GREEN, BLUE, ORANGE, BLACK = '#008000', '#0000ff', '#ff8000', '#000000'
@@ -861,9 +861,14 @@ def page(kerf):
         assert a in html, a
         html = html.replace(a, b)
     assert '{{' not in html
-    # every link to another page opens in a new tab
-    html = html.replace('<a href="http', '<a target="_blank" rel="noopener" href="http')
-    return html
+    # every link but an in-page #anchor opens in a new tab
+    def new_tab(m):
+        tag = m.group(0)
+        h = re.search(r'href\s*=\s*["\']?([^"\'\s>]*)', tag)
+        if not h or h.group(1).startswith(('#', '?')) or re.search(r'\btarget\s*=', tag):
+            return tag
+        return tag[:-1] + ' target="_blank" rel="noopener">'
+    return re.sub(r'<a\b[^>]*>', new_tab, html)
 
 
 def main(argv):
