@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gray and de Bruijn</title>
 <meta name="description" content="Gray codes and de Bruijn sequences through three small alphabets: layer-memory stacks, Zellweger's Logic Alphabet and a grid script, with a laser-cut ruler, encoder discs and rings.">
-<!-- index.html is written by walks.py from page.html: edit page.html -->
+<!-- index.html is written by walks.rs from page.html: edit page.html -->
 <style>
 :root {
   --bg: #fcfcfb; --surface: #f3f2ee; --ink: #0b0b0b; --ink-2: #52514e; --rule: #dddcd6;
@@ -171,7 +171,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 <h1>Gray and de Bruijn</h1>
 <p class="lede">Two classic ways to walk through a small alphabet, tried on three alphabets from earlier projects: the A B C layers of <a href="https://gernreich.github.io/atomic-layer-memory/" target="_blank" rel="noopener">atomic layer memory</a>, the sixteen truth tables of Zellweger's <a href="https://gernreich.github.io/Logic-Research/zellweger.html" target="_blank" rel="noopener">Logic Alphabet</a>, and the 28 letters of the <a href="https://gernreich.github.io/gernreich-writing/" target="_blank" rel="noopener">grid script</a>. Four of the walks are cut files for the laser.</p>
 
-<p class="credit"><strong>Whose ideas these are.</strong> The layer memory and the grid script are the author's. The Logic Alphabet is Shea Zellweger's. Gray codes are named after Frank Gray of Bell Labs (patented 1953), though Émile Baudot used one in the 1870s. De Bruijn sequences are named after Nicolaas de Bruijn (1946), who was preceded by Camille Flye Sainte-Marie (1894). Rulers and discs that read their own position this way are standard in absolute encoders. What is new here is putting the three alphabets through these walks. <a href="https://www.anthropic.com/claude" target="_blank" rel="noopener">Claude</a> (Anthropic), working in Claude Code, proposed this exploration at Michael's request. Claude also worked out the counts and the two findings below (the rings that put each truth table across from its negation, and the bound on the grid script), designed the pieces, and wrote <code>walks.py</code>, the cut files, the 3D views and this page. <code>walks.py</code> checks every count.</p>
+<p class="credit"><strong>Whose ideas these are.</strong> The layer memory and the grid script are the author's. The Logic Alphabet is Shea Zellweger's. Gray codes are named after Frank Gray of Bell Labs (patented 1953), though Émile Baudot used one in the 1870s. De Bruijn sequences are named after Nicolaas de Bruijn (1946), who was preceded by Camille Flye Sainte-Marie (1894). Rulers and discs that read their own position this way are standard in absolute encoders. What is new here is putting the three alphabets through these walks. <a href="https://www.anthropic.com/claude" target="_blank" rel="noopener">Claude</a> (Anthropic), working in Claude Code, proposed this exploration at Michael's request. Claude also worked out the counts and the two findings below (the rings that put each truth table across from its negation, and the bound on the grid script), designed the pieces, and wrote <code>walks.rs</code> (first in Python, <code>walks.py</code>), the cut files, the 3D views and this page. <code>walks.rs</code> checks every count.</p>
 
 <h2 id="walks">Two ways to walk an alphabet</h2>
 <p><strong>A Gray code</strong> lists every symbol once, and each differs from the one before by a single change. Counting 0 to 15 in binary, 0111 to 1000 flips four bits at once. In Gray code no step flips more than one. If the list closes back on itself, it is a Gray <em>cycle</em>.</p>
@@ -203,7 +203,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 {{COUNTING}}
 
 <h3>A stack with every window once</h3>
-<p>Skip the B spacers and read only the bit layers, three at a time. The de Bruijn sequence <code>{{STACK_BITS}}</code>, written in the spacer code, gives a stack of 8 bit layers and 8 spacers. Going up the stack and wrapping round from the top to the bottom, each of the eight 3-bit words 000 to 111 turns up exactly once. The dashed cells repeat the start. A window of three bits therefore tells you where in the stack you are. The same works for windows of any size <em>n</em>, and <code>walks.py</code> checks 3, 4 and 5 bits.</p>
+<p>Skip the B spacers and read only the bit layers, three at a time. The de Bruijn sequence <code>{{STACK_BITS}}</code>, written in the spacer code, gives a stack of 8 bit layers and 8 spacers. Going up the stack and wrapping round from the top to the bottom, each of the eight 3-bit words 000 to 111 turns up exactly once. The dashed cells repeat the start. A window of three bits therefore tells you where in the stack you are. The same works for windows of any size <em>n</em>, and <code>walks.rs</code> checks 3, 4 and 5 bits.</p>
 {{STACK_DB}}
 <div class="view3d">
 <canvas id="stack3d" aria-label="the 16-layer spacer-code stack as close-packed atoms, A red, B green, C blue"></canvas>
@@ -280,7 +280,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 </div>
 
 <h2 id="cutting">Cutting</h2>
-<p>The six cut files are in <a href="https://github.com/Gernreich/gray-and-de-bruijn/tree/main/cut-files" target="_blank" rel="noopener"><code>cut-files/</code></a>, each one fitting the 600 × 305&nbsp;mm bed of the xTool P2S. They use the staircase ruler's layer colours: green #008000 to engrave (filled), blue #0000ff to score, orange #ff8000 for inner cuts (cut first), black #000000 for outlines. Outlines sit half a kerf outside the finished edge, so the ruler's zero is the cut face. <code>python3 walks.py --kerf=0.18</code> rewrites the files for another kerf (the default is 0.13).</p>
+<p>The six cut files are in <a href="https://github.com/Gernreich/gray-and-de-bruijn/tree/main/cut-files" target="_blank" rel="noopener"><code>cut-files/</code></a>, each one fitting the 600 × 305&nbsp;mm bed of the xTool P2S. They use the staircase ruler's layer colours: green #008000 to engrave (filled), blue #0000ff to score, orange #ff8000 for inner cuts (cut first), black #000000 for outlines. Outlines sit half a kerf outside the finished edge, so the ruler's zero is the cut face. <code>target/release/walks --kerf=0.18</code> rewrites the files for another kerf (the default is 0.13).</p>
 <ul>
 <li><code>window-ruler-300.svg</code>: 320 × 30&nbsp;mm, with a hanging hole in the tail</li>
 <li><code>window-reader.svg</code>: 36 × 30&nbsp;mm</li>

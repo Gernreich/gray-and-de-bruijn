@@ -44,15 +44,15 @@ What comes out:
   The least turning possible is 32 eighths. 2,161,152 different rings reach it
   (counted by `tools/count_grid_rings.rs`), and the page lets you browse 48 of them.
 
-Every count above is checked by `walks.py`.
+Every count above is checked by `walks.rs`.
 
 | Path | What |
 |---|---|
-| `walks.py` | the walks, the checks, the cut files and the page: `python3 walks.py` (`--kerf=MM`, default 0.13; `--check` writes nothing) |
-| `page.html` | the page template; `walks.py` writes `index.html` from it |
+| `walks.rs` | the walks, the checks, the cut files and the page: `cargo build --release`, then `target/release/walks` (`--kerf=MM`, default 0.13; `--check` writes nothing). Rust since 2026-11-09; the Python original wrote the same files byte for byte |
+| `page.html` | the page template; `walks.rs` writes `index.html` from it |
 | `index.html` | the page: decoders for the ruler and disc, the counting stacks with or without the B spacers, the 48 Logic rings, 48 sample grid rings, a letter-by-letter animation of the grid ring, and 3D views (three.js) of the spacer stack, each ring as plywood and as a band on a finger, and the 4-cube in perspective or as its shadow |
-| `grid-rings.json` | the 48 sample grid rings (`python3 walks.py --resample` rewrites it; about 4 minutes) |
-| `tools/count_grid_rings.rs` | counts every least-turning grid ring: `python3 walks.py --graph` feeds it |
+| `grid-rings.json` | the 48 sample grid rings (`target/release/walks --resample` rewrites it, the same 48 every time; a few seconds) |
+| `tools/count_grid_rings.rs` | counts every least-turning grid ring: `target/release/walks --graph` feeds it |
 | `cut-files/` | `window-ruler-300`, `window-reader`, `gray-disc`, `de-bruijn-disc`, `logic-ring`, `grid-ring`: SVG for the xTool P2S. Green engrave, blue score, orange inner cut, black outline |
 
 Gray codes are named for Frank Gray (patented 1953), though Émile Baudot used
@@ -64,4 +64,4 @@ Released under [CC0 1.0](LICENSE).
 
 ## Credits
 
-Made by Michael Gernreich with [Claude](https://www.anthropic.com/claude) (Anthropic), working in Claude Code. Claude proposed this exploration at Michael's request, worked out the results (the 48 antipodal Logic rings, the parity bound of 32 eighths on the grid script, the stack counts), designed the pieces, and wrote `walks.py`, the cut files, the 3D views and the documentation. Commits Claude made carry a `Co-Authored-By: Claude` line.
+Made by Michael Gernreich with [Claude](https://www.anthropic.com/claude) (Anthropic), working in Claude Code. Claude proposed this exploration at Michael's request, worked out the results (the 48 antipodal Logic rings, the parity bound of 32 eighths on the grid script, the stack counts), designed the pieces, and wrote `walks.rs` (first in Python, `walks.py`), the cut files, the 3D views and the documentation. Commits Claude made carry a `Co-Authored-By: Claude` line.

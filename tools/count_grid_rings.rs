@@ -1,4 +1,4 @@
-// Count every least-turning grid ring: python3 walks.py --graph | (rustc -O -o /tmp/cnt tools/count_grid_rings.rs && /tmp/cnt)
+// Count every least-turning grid ring: target/release/walks --graph | (rustc -O -o /tmp/cnt tools/count_grid_rings.rs && /tmp/cnt)
 // Prints directed and undirected counts (2161152 undirected; about 13 minutes).
 use std::io::Read;
 struct G { n: usize, adj: Vec<Vec<(usize,u32)>>, start: usize, bound: u32 }

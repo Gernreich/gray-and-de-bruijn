@@ -1,0 +1,14 @@
+[package]
+name = "gray-and-de-bruijn"
+version = "0.1.0"
+edition = "2021"
+authors = ["Michael Gernreich", "Claude (Anthropic) <noreply@anthropic.com>"]
+description = "Gray codes and de Bruijn sequences through three small alphabets, and four laser-cut pieces"
+license-file = "LICENSE"
+
+[[bin]]
+name = "walks"
+path = "walks.rs"
+
+[profile.release]
+opt-level = 3
